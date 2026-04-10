@@ -394,9 +394,33 @@
             const data = await response.json();
 
             if (data.success) {
-                if(data.amount) document.getElementById('review-amount').value = data.amount;
-                if(data.date) document.getElementById('review-date').value = data.date;
-                if(data.txn_id) document.getElementById('review-txn').value = data.txn_id;
+                const amountInput = document.getElementById('review-amount');
+                const dateInput = document.getElementById('review-date');
+                const txnInput = document.getElementById('review-txn');
+
+                let filled = false;
+                if (data.amount !== undefined && data.amount !== null) {
+                    amountInput.value = data.amount;
+                    filled = true;
+                }
+                if (data.date) {
+                    dateInput.value = data.date;
+                    filled = true;
+                }
+                if (data.txn_id) {
+                    txnInput.value = data.txn_id;
+                    filled = true;
+                }
+
+                if (filled) {
+                    // Flash effect to show auto-fill happened
+                    [amountInput, dateInput, txnInput].forEach(el => {
+                        if (el.value) {
+                            el.parentElement.classList.add('ring-2', 'ring-green-400', 'animate-pulse');
+                            setTimeout(() => el.parentElement.classList.remove('ring-2', 'ring-green-400', 'animate-pulse'), 2000);
+                        }
+                    });
+                }
                 aiStatus.innerHTML = '<p class="text-[9px] text-green-600 font-black uppercase tracking-widest">✓ AI Scan Complete</p>';
             } else {
                 aiStatus.innerHTML = '<p class="text-[9px] text-orange-500 font-black uppercase tracking-widest">! Manual Entry Required</p>';

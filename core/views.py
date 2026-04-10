@@ -188,24 +188,31 @@ def extract_ocr_details(image_file):
         img = Image.open(BytesIO(image_bytes))
         
         prompt = """
-        Extract details from this payment receipt. 
-        Return ONLY valid JSON. 
-        Structure: {"amount": float, "date": "DD/MM/YYYY", "txn_id": "string"}.
-        No explanation or markdown backticks.
+        Extract payment details from this receipt/screenshot. 
+        Focus on: 'Amount Paid', 'Total', 'Date of Transaction', and 'Transaction ID/Reference No'.
+        
+        Return ONLY valid JSON:
+        {
+          "amount": float or null, 
+          "date": "DD/MM/YYYY" or null, 
+          "txn_id": "string" or null
+        }
+        
+        Rules:
+        1. amount: strictly decimal number (no commas, no currency symbols).
+        2. date: strictly DD/MM/YYYY format.
+        3. txn_id: the reference or transaction number.
+        4. No markdown, no backticks, no explanation.
         """
         
         response = model.generate_content([prompt, img])
-        clean_resp = response.text.strip()
-        if '```json' in clean_resp:
-            clean_resp = clean_resp.split('```json')[1].split('```')[0].strip()
-        elif '```' in clean_resp:
-            clean_resp = clean_resp.split('```')[1].strip()
+        clean_resp = response.text.strip().replace('```json', '').replace('```', '').strip()
         
         data = json.loads(clean_resp)
         return {
-            'amount': data.get('amount', ''),
-            'date': data.get('date', ''),
-            'txn_id': data.get('txn_id', '')
+            'amount': data.get('amount'),
+            'date': data.get('date'),
+            'txn_id': data.get('txn_id')
         }
     except Exception as e:
         print(f"Gemini API Error: {e}")
