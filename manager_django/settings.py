@@ -166,11 +166,9 @@ if os.environ.get('AWS_ACCESS_KEY_ID'):
     AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'ap-southeast-1')
     
     AWS_S3_CUSTOM_DOMAIN = f"{AWS_S3_ENDPOINT_URL.split('://')[1]}/{AWS_STORAGE_BUCKET_NAME}"
-    
-    # PRIVACY FIX: Private ACL and Signed URLs
-    AWS_DEFAULT_ACL = 'private'
-    AWS_QUERYSTRING_AUTH = True
-    AWS_QUERYSTRING_EXPIRE = 3600  # Links automatically expire in 1 hour
+    # Reverted to Public ACL: S3 Signed URLs break standard HTML5 <video> streaming tags on Mobile/Safari.
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_QUERYSTRING_AUTH = False
 
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': 'max-age=86400',

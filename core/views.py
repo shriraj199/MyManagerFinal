@@ -217,8 +217,11 @@ def maintenance_view(request):
             reader = get_ocr_reader()
             if not reader: raise Exception("OCR Reader Error")
             
-            img = Image.open(proof.proof_image.path)
+            # Correctly open file from S3 or Local Storage
+            proof.proof_image.open('rb')
+            img = Image.open(proof.proof_image).convert('RGB')
             results = reader.readtext(np.array(img))
+            proof.proof_image.close()
             extracted_text = " ".join([res[1] for res in results])
             
             # --- OCR NORMALIZATION ---
