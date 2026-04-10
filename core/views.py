@@ -206,9 +206,17 @@ def extract_ocr_details(image_file):
         """
         
         response = model.generate_content([prompt, img])
-        clean_resp = response.text.strip().replace('```json', '').replace('```', '').strip()
+        clean_resp = response.text.strip()
         
-        data = json.loads(clean_resp)
+        # More robust JSON extraction using Regex
+        match = re.search(r'\{.*\}', clean_resp, re.DOTALL)
+        if match:
+            json_str = match.group(0)
+            data = json.loads(json_str)
+        else:
+            # Fallback if no JSON structure found
+            data = {}
+            
         return {
             'amount': data.get('amount'),
             'date': data.get('date'),
