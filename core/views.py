@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.template.loader import get_template
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -548,14 +548,37 @@ def generate_proof_receipt_pdf(request, proof_id):
 @login_required
 def generate_proof_receipt(request, proof_id):
     from .models import PaymentProof, RentPaymentProof
-    is_rental = (request.user.role == 'resident' and request.user.resident_role == 'rental')
+    
+    # Try to find the proof in either model
+    proof = PaymentProof.objects.filter(id=proof_id).first()
+    if not proof:
+        proof = RentPaymentProof.objects.filter(id=proof_id).first()
+        
+    if not proof:
+        raise Http404("Payment proof not found.")
 
-    if is_rental:
-        proof = get_object_or_404(RentPaymentProof, id=proof_id, rental_user=request.user, status__in=['verified', 'approved'])
-        user_for_receipt = proof.rental_user
-    else:
-        proof = get_object_or_404(PaymentProof, id=proof_id, user=request.user, status__in=['verified', 'approved'])
-        user_for_receipt = proof.user
+    # Permission Check
+    can_view = False
+    if request.user.role == 'secretary' or request.user.role == 'admin':
+        # Admin/Secretary can view if it belongs to their society
+        if hasattr(proof, 'society_name') and proof.society_name == request.user.society_name:
+            can_view = True
+        elif hasattr(proof, 'owner') and proof.owner.society_name == request.user.society_name:
+            can_view = True
+    elif hasattr(proof, 'user') and proof.user == request.user:
+        can_view = True
+    elif hasattr(proof, 'rental_user') and proof.rental_user == request.user:
+        can_view = True
+        
+    if not can_view:
+        messages.error(request, "Permission denied.")
+        return redirect('maintenance')
+
+    if proof.status not in ['verified', 'approved']:
+        messages.error(request, "Receipt is only available for verified/approved payments.")
+        return redirect('maintenance')
+
+    user_for_receipt = getattr(proof, 'user', getattr(proof, 'rental_user', None))
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm,
