@@ -11,3 +11,4 @@ dj-database-url
 requests
 django-storages
 boto3
+pillow-heif

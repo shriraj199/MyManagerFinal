@@ -19,18 +19,31 @@
         <div class="bg-white rounded-[2.5rem] border border-bordercolor shadow-sm overflow-hidden transition hover:shadow-md">
             <!-- Media Section -->
             {% if notice.image %}
-            <div class="relative group">
-                <img src="{{ notice.image.url }}" class="w-full h-56 object-cover transition-transform duration-700 group-hover:scale-105">
+            <div class="relative group bg-gray-100">
+                <img src="{{ notice.image.url }}" 
+                     loading="lazy" 
+                     alt="{{ notice.title }}"
+                     class="w-full h-56 object-cover transition-transform duration-700 group-hover:scale-105">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
             </div>
             {% endif %}
             
             {% if notice.video %}
-            <div class="aspect-video bg-black/5 relative group">
-                <video controls class="w-full h-full max-h-56 rounded-t-[2.5rem]">
-                    <source src="{{ notice.video.url }}" type="video/mp4">
+            <div class="aspect-video bg-black relative group overflow-hidden">
+                <video controls 
+                       preload="metadata" 
+                       playsinline
+                       loading="lazy"
+                       class="w-full h-full max-h-64 rounded-t-[2.5rem] object-contain">
+                    <source src="{{ notice.video.url }}">
                     Your browser does not support the video tag.
                 </video>
+                <!-- Play Overlay Decor -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                     <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
+                        <i data-lucide="play" class="w-8 h-8 text-white fill-white"></i>
+                     </div>
+                </div>
             </div>
             {% endif %}
 

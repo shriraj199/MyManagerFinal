@@ -1,5 +1,31 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
+import os
+
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass
+
+def process_image(image_field):
+    """Converts HEIC to JPEG and optimizes images."""
+    if not image_field:
+        return
+    
+    img_name = os.path.basename(image_field.name)
+    name, ext = os.path.splitext(img_name)
+    
+    # If it's a HEIC/HEIF file, we convert it to JPEG
+    if ext.lower() in ['.heic', '.heif']:
+        img = Image.open(image_field)
+        buffer = BytesIO()
+        img.convert('RGB').save(buffer, format='JPEG', quality=85)
+        new_image = ContentFile(buffer.getvalue())
+        image_field.save(f"{name}.jpg", new_image, save=False)
 
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -83,6 +109,11 @@ class InviteCode(models.Model):
     maintenance_qr = models.ImageField(upload_to='maintenance_qrs/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if self.maintenance_qr:
+            process_image(self.maintenance_qr)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.society_name} - {self.code}"
 
@@ -105,6 +136,11 @@ class PaymentProof(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if self.proof_image:
+            process_image(self.proof_image)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Proof by {self.user.username} for {self.society_name} ({self.status})"
 
@@ -115,6 +151,11 @@ class SocietyMaintenanceSettings(models.Model):
     expected_payee_account = models.CharField(max_length=10, blank=True, null=True, help_text="Last 4 digits of your bank account (e.g. 5200)")
     due_day = models.PositiveSmallIntegerField(default=15, help_text="Day of the month when late fee starts (e.g. 15)")
     late_fee_percentage = models.PositiveSmallIntegerField(default=21, help_text="Percentage of late fee tax (e.g. 21)")
+
+    def save(self, *args, **kwargs):
+        if self.maintenance_qr:
+            process_image(self.maintenance_qr)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Settings for {self.society_name}"
@@ -130,6 +171,11 @@ class RentalChargeSettings(models.Model):
     rent_qr = models.ImageField(upload_to='rent_qrs/', blank=True, null=True)
     notes = models.TextField(blank=True, null=True, help_text="Any notes for the rental (e.g. unit details)")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.rent_qr:
+            process_image(self.rent_qr)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         rental_name = self.rental_user.username if self.rental_user else 'Unassigned'
@@ -153,6 +199,11 @@ class RentPaymentProof(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if self.proof_image:
+            process_image(self.proof_image)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Rent Proof from {self.rental_user.username} to {self.owner.username}"
 
@@ -164,6 +215,11 @@ class Notice(models.Model):
     video = models.FileField(upload_to='notices/videos/', blank=True, null=True)
     society_name = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.image:
+            process_image(self.image)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.society_name} - {self.title}"
