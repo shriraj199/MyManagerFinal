@@ -85,12 +85,21 @@ WSGI_APPLICATION = 'manager_django.wsgi.application'
 
 # WARNING: SQLite will NOT persist data on Vercel. 
 # Every redeploy or function spin-down will reset your database.
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_URL'):
+    # On Vercel, the file system is read-only. We must write to /tmp
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': '/tmp/db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
