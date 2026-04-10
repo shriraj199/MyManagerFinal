@@ -239,6 +239,8 @@ def maintenance_view(request):
         final_date_str = request.POST.get('final_date')
         final_txn_id = request.POST.get('final_txn_id')
         
+        print(f"UPLOAD DEBUG: Amount={final_amount}, Date={final_date_str}, File={proof_file.name}")
+        
         if is_rental:
             proof = RentPaymentProof.objects.create(rental_user=request.user, owner=request.user.owner, proof_image=proof_file)
         else:
@@ -247,20 +249,33 @@ def maintenance_view(request):
         # Use provided fields or fallback to internal OCR
         if final_amount:
             try:
-                proof.extracted_amount = Decimal(final_amount)
+                # Clean amount string (remove Currency symbols if any)
+                clean_amount = ''.join(c for c in str(final_amount) if c.isdigit() or c == '.')
+                proof.extracted_amount = Decimal(clean_amount) if clean_amount else None
                 proof.transaction_id = final_txn_id
+                
                 if final_date_str:
-                    try: proof.extracted_date = datetime.strptime(final_date_str, "%d/%m/%Y").date()
-                    except: proof.extracted_date = datetime.strptime(final_date_str, "%Y-%m-%d").date()
-                proof.status = 'verified' if (not target_fee or abs(proof.extracted_amount - target_fee) < 1) else 'pending'
+                    try: 
+                        proof.extracted_date = datetime.strptime(final_date_str, "%d/%m/%Y").date()
+                    except: 
+                        try: proof.extracted_date = datetime.strptime(final_date_str, "%Y-%m-%d").date()
+                        except: pass
+                
+                # Auto-verify if amount matches target fee
+                if target_fee and proof.extracted_amount:
+                    if abs(proof.extracted_amount - target_fee) < 1:
+                        proof.status = 'verified'
             except Exception as e:
-                print(f"Save Error: {e}")
+                print(f"UPLOAD SAVE ERROR: {e}")
         else:
-            # Emergency Fallback OCR if popup was bypassed
+            print("UPLOAD DEBUG: Falling back to Gemini OCR as final_amount was missing")
+            # Emergency Fallback if popup was bypassed
             details = extract_ocr_details(proof_file)
             if details:
-                proof.extracted_amount = Decimal(details['amount']) if details.get('amount') else None
-                proof.transaction_id = details.get('txn_id')
+                try:
+                    proof.extracted_amount = Decimal(str(details.get('amount', '0')))
+                    proof.transaction_id = details.get('txn_id')
+                except: pass
         
         proof.save()
         messages.success(request, "Proof uploaded successfully.")

@@ -13,6 +13,9 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Only handle GET requests for caching
+  if (event.request.method !== 'GET') return;
+
   // Fix: Do not intercept external CDN requests (Tailwind, Lucide, etc.) to avoid CORS issues
   if (event.request.url.startsWith('http') && !event.request.url.includes(self.location.origin)) {
     return;
