@@ -188,13 +188,10 @@ def extract_ocr_details(image_file):
         img = Image.open(BytesIO(image_bytes))
         
         prompt = """
-        Extract the following details from this payment receipt image:
-        1. Amount (Numeric only, e.g., 500.00)
-        2. Date (Format: DD/MM/YYYY)
-        3. Transaction ID (UTR or Reference ID)
-        
-        Return ONLY a JSON object with keys: "amount", "date", "txn_id".
-        If a field is not found, use an empty string.
+        Extract details from this payment receipt. 
+        Return ONLY valid JSON. 
+        Structure: {"amount": float, "date": "DD/MM/YYYY", "txn_id": "string"}.
+        No explanation or markdown backticks.
         """
         
         response = model.generate_content([prompt, img])
@@ -305,6 +302,10 @@ def verify_payment_proof(request, proof_id, action):
         messages.error(request, "Invalid action.")
         
     proof.save()
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'status': proof.status, 'message': f"Proof {action}ed successfully."})
+        
     return redirect('maintenance')
 
 @login_required

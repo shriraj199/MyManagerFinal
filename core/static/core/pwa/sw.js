@@ -13,6 +13,11 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Fix: Do not intercept external CDN requests (Tailwind, Lucide, etc.) to avoid CORS issues
+  if (event.request.url.startsWith('http') && !event.request.url.includes(self.location.origin)) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))
