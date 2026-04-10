@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'manager_django.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-import dj_database_url
+import dj_database_url  # type: ignore
 
 # We are strictly using Supabase PostgreSQL now instead of SQLite.
 # Make sure to provide 'DATABASE_URL' in Vercel Environment Variables.

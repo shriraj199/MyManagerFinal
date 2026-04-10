@@ -1,7 +1,7 @@
 import os
 import sys
 import shutil
-from django.core.wsgi import get_wsgi_application
+from django.core.wsgi import get_wsgi_application  # type: ignore
 
 # Robust path handling
 path = os.path.dirname(os.path.dirname(__file__))
