@@ -23,30 +23,8 @@ from django.utils import timezone
 from django.db.models import Sum
 from resident.models import Bill
 from PIL import Image
-import numpy as np
 import google.generativeai as genai
 import json
-
-_OCR_READER = None
-
-def get_ocr_reader():
-    """Lazily initializes the OCR reader, ensuring models are stored in a writable directory for Vercel."""
-    global _OCR_READER
-    if _OCR_READER is None:
-        try:
-            import easyocr
-            # Vercel only allows writing to /tmp
-            model_dir = '/tmp/easyocr_models'
-            if not os.path.exists(model_dir):
-                os.makedirs(model_dir, exist_ok=True)
-            
-            # Initialize reader with specific model directory
-            _OCR_READER = easyocr.Reader(['en'], gpu=False, model_storage_directory=model_dir)
-        except Exception as e:
-            # More descriptive error for debugging
-            print(f"OCR Initialization Error: {str(e)}")
-            return None
-    return _OCR_READER
 
 def add_pdf_watermark(canvas, doc):
     """Draws a light watermark in the center of the PDF page."""
@@ -190,7 +168,7 @@ def notices_view(request):
     return render(request, 'core/notices.html', {'notices': notices})
 
 def extract_ocr_details(image_file):
-    """Helper to extract details using Google Gemini Flash (Vision). Fallback to Regex."""
+    """Helper to extract details using Google Gemini Flash (Vision)."""
     api_key = os.environ.get('GEMINI_API_KEY')
     
     # Reset file pointer
@@ -198,69 +176,42 @@ def extract_ocr_details(image_file):
     image_bytes = image_file.read()
     image_file.seek(0)
     
-    if api_key:
-        try:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            
-            # Prepare image part
-            img = Image.open(BytesIO(image_bytes))
-            
-            prompt = """
-            Extract the following details from this payment receipt image:
-            1. Amount (Numeric only, e.g., 500.00)
-            2. Date (Format: DD/MM/YYYY)
-            3. Transaction ID (UTR or Reference ID)
-            
-            Return ONLY a JSON object with keys: "amount", "date", "txn_id".
-            If a field is not found, use an empty string.
-            """
-            
-            response = model.generate_content([prompt, img])
-            # Clean up response to find JSON
-            clean_resp = response.text.strip()
-            if '```json' in clean_resp:
-                clean_resp = clean_resp.split('```json')[1].split('```')[0].strip()
-            elif '```' in clean_resp:
-                clean_resp = clean_resp.split('```')[1].strip()
-            
-            data = json.loads(clean_resp)
-            return {
-                'amount': data.get('amount', ''),
-                'date': data.get('date', ''),
-                'txn_id': data.get('txn_id', '')
-            }
-        except Exception as e:
-            print(f"Gemini API Error: {e}")
+    if not api_key:
+        print("Gemini API Key missing.")
+        return {}
 
-    # --- FALLBACK TO REGEX/EASYOCR (Current Logic) ---
     try:
-        reader = get_ocr_reader()
-        if not reader: return {}
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
-        img = Image.open(BytesIO(image_bytes)).convert('RGB')
-        results = reader.readtext(np.array(img))
-        text = " ".join([res[1] for res in results])
+        # Prepare image part
+        img = Image.open(BytesIO(image_bytes))
         
-        # Cleanup
-        text = re.sub(r'([0-9])O', r'\1 0', text)
-        text = text.replace('OO', '00').replace('oo', '00')
+        prompt = """
+        Extract the following details from this payment receipt image:
+        1. Amount (Numeric only, e.g., 500.00)
+        2. Date (Format: DD/MM/YYYY)
+        3. Transaction ID (UTR or Reference ID)
         
-        # Amount
-        amt_match = re.search(r'(?:Rs|INR|₹)\s*[:.]?\s*([\d,]+(?:\.\d{2})?)', text, re.IGNORECASE)
-        amount = amt_match.group(1).replace(',', '') if amt_match else ""
+        Return ONLY a JSON object with keys: "amount", "date", "txn_id".
+        If a field is not found, use an empty string.
+        """
         
-        # Date
-        date_match = re.search(r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})', text)
-        date_str = date_match.group(1) if date_match else ""
+        response = model.generate_content([prompt, img])
+        clean_resp = response.text.strip()
+        if '```json' in clean_resp:
+            clean_resp = clean_resp.split('```json')[1].split('```')[0].strip()
+        elif '```' in clean_resp:
+            clean_resp = clean_resp.split('```')[1].strip()
         
-        # Txn ID
-        txn_match = re.search(r'(?:Ref|UTR|Txn|Transaction|ID)[:\s]*([A-Z0-9]{10,25})', text, re.IGNORECASE)
-        txn_id = txn_match.group(1) if txn_match else ""
-        
-        return {'amount': amount, 'date': date_str, 'txn_id': txn_id}
+        data = json.loads(clean_resp)
+        return {
+            'amount': data.get('amount', ''),
+            'date': data.get('date', ''),
+            'txn_id': data.get('txn_id', '')
+        }
     except Exception as e:
-        print(f"OCR Fallback Error: {e}")
+        print(f"Gemini API Error: {e}")
         return {}
 
 @login_required

@@ -4,7 +4,6 @@ whitenoise
 gunicorn
 python-dotenv
 Pillow
-numpy
 reportlab
 psycopg2-binary
 dj-database-url
@@ -12,6 +11,4 @@ requests
 django-storages
 boto3
 pillow-heif
-easyocr
-opencv-python-headless
 google-generativeai
