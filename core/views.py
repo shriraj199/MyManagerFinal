@@ -24,6 +24,8 @@ from django.db.models import Sum
 from resident.models import Bill
 from PIL import Image
 import numpy as np
+import google.generativeai as genai
+import json
 
 _OCR_READER = None
 
@@ -188,14 +190,54 @@ def notices_view(request):
     return render(request, 'core/notices.html', {'notices': notices})
 
 def extract_ocr_details(image_file):
-    """Helper to extract amount, date, and txn_id from an image file."""
+    """Helper to extract details using Google Gemini Flash (Vision). Fallback to Regex."""
+    api_key = os.environ.get('GEMINI_API_KEY')
+    
+    # Reset file pointer
+    image_file.seek(0)
+    image_bytes = image_file.read()
+    image_file.seek(0)
+    
+    if api_key:
+        try:
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            # Prepare image part
+            img = Image.open(BytesIO(image_bytes))
+            
+            prompt = """
+            Extract the following details from this payment receipt image:
+            1. Amount (Numeric only, e.g., 500.00)
+            2. Date (Format: DD/MM/YYYY)
+            3. Transaction ID (UTR or Reference ID)
+            
+            Return ONLY a JSON object with keys: "amount", "date", "txn_id".
+            If a field is not found, use an empty string.
+            """
+            
+            response = model.generate_content([prompt, img])
+            # Clean up response to find JSON
+            clean_resp = response.text.strip()
+            if '```json' in clean_resp:
+                clean_resp = clean_resp.split('```json')[1].split('```')[0].strip()
+            elif '```' in clean_resp:
+                clean_resp = clean_resp.split('```')[1].strip()
+            
+            data = json.loads(clean_resp)
+            return {
+                'amount': data.get('amount', ''),
+                'date': data.get('date', ''),
+                'txn_id': data.get('txn_id', '')
+            }
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+
+    # --- FALLBACK TO REGEX/EASYOCR (Current Logic) ---
     try:
         reader = get_ocr_reader()
         if not reader: return {}
         
-        # Read image
-        image_bytes = image_file.read()
-        image_file.seek(0) # Reset pointer for later use
         img = Image.open(BytesIO(image_bytes)).convert('RGB')
         results = reader.readtext(np.array(img))
         text = " ".join([res[1] for res in results])
@@ -218,7 +260,7 @@ def extract_ocr_details(image_file):
         
         return {'amount': amount, 'date': date_str, 'txn_id': txn_id}
     except Exception as e:
-        print(f"OCR Helper Error: {e}")
+        print(f"OCR Fallback Error: {e}")
         return {}
 
 @login_required

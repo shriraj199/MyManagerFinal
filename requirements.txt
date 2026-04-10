@@ -14,3 +14,4 @@ boto3
 pillow-heif
 easyocr
 opencv-python-headless
+google-generativeai
