@@ -25,19 +25,24 @@ from resident.models import Bill
 from PIL import Image
 import numpy as np
 
-# Global OCR Reader (Lazy Initialization)
 _OCR_READER = None
 
 def get_ocr_reader():
+    """Lazily initializes the OCR reader, ensuring models are stored in a writable directory for Vercel."""
     global _OCR_READER
     if _OCR_READER is None:
         try:
             import easyocr
+            # Vercel only allows writing to /tmp
+            model_dir = '/tmp/easyocr_models'
+            if not os.path.exists(model_dir):
+                os.makedirs(model_dir, exist_ok=True)
             
-            # Use CPU by default to avoid CUDA initialization errors on typical host environments
-            _OCR_READER = easyocr.Reader(['en'], gpu=False)
-        except ImportError as e:
-            print(f"OCR Reader Initialization Error: {e}")
+            # Initialize reader with specific model directory
+            _OCR_READER = easyocr.Reader(['en'], gpu=False, model_storage_directory=model_dir)
+        except Exception as e:
+            # More descriptive error for debugging
+            print(f"OCR Initialization Error: {str(e)}")
             return None
     return _OCR_READER
 
@@ -217,11 +222,16 @@ def maintenance_view(request):
             reader = get_ocr_reader()
             if not reader: raise Exception("OCR Reader Error")
             
-            # Correctly open file from S3 or Local Storage
+            # Correctly open and read binary file from S3 or Local Storage
             proof.proof_image.open('rb')
-            img = Image.open(proof.proof_image).convert('RGB')
-            results = reader.readtext(np.array(img))
+            image_bytes = proof.proof_image.read()
             proof.proof_image.close()
+            
+            from PIL import Image
+            import numpy as np
+            
+            img = Image.open(BytesIO(image_bytes)).convert('RGB')
+            results = reader.readtext(np.array(img))
             extracted_text = " ".join([res[1] for res in results])
             
             # --- OCR NORMALIZATION ---
@@ -419,6 +429,37 @@ def maintenance_view(request):
         'settings': settings_obj,
         'target_fee': target_fee,
     })
+
+@login_required
+def verify_payment_proof(request, proof_id, action):
+    """Allows a Secretary or Admin to manually approve or reject a payment proof."""
+    if request.user.role not in ['secretary', 'admin']:
+        messages.error(request, "Permission denied.")
+        return redirect('maintenance')
+        
+    from .models import PaymentProof, RentPaymentProof
+    # Check both models if needed, but maintenance is usually PaymentProof
+    proof = PaymentProof.objects.filter(id=proof_id, society_name=request.user.society_name).first()
+    
+    if not proof:
+        # Check rental proofs if it's a rental portal context
+        proof = RentPaymentProof.objects.filter(id=proof_id, owner=request.user).first()
+        
+    if not proof:
+        messages.error(request, "Proof not found.")
+        return redirect('maintenance')
+        
+    if action == 'approve':
+        proof.status = 'approved'
+        messages.success(request, f"Proof #{proof.id} has been manually approved.")
+    elif action == 'reject':
+        proof.status = 'rejected'
+        messages.warning(request, f"Proof #{proof.id} has been rejected.")
+    else:
+        messages.error(request, "Invalid action.")
+        
+    proof.save()
+    return redirect('maintenance')
 
 @login_required
 def delete_payment_proof(request, proof_id):
