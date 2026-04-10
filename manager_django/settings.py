@@ -83,17 +83,21 @@ WSGI_APPLICATION = 'manager_django.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+import dj_database_url
+
 # WARNING: SQLite will NOT persist data on Vercel. 
 # Every redeploy or function spin-down will reset your database.
-if os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_URL'):
-    # On Vercel, the file system is read-only. We must write to /tmp
+# In Production (Vercel), we expect DATABASE_URL to point to Supabase PostgreSQL.
+if os.environ.get('DATABASE_URL'):
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': '/tmp/db.sqlite3',
-        }
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
 else:
+    # Local fallback to SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

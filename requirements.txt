@@ -6,3 +6,5 @@ python-dotenv
 Pillow
 numpy
 reportlab
+psycopg2-binary
+dj-database-url
