@@ -276,16 +276,6 @@
                     <p class="text-sm font-bold text-textdark">Select payment screenshot</p>
                     <div id="preview-container" class="hidden mt-4">
                         <img id="preview" class="rounded-xl max-h-40 border border-bordercolor shadow-md mx-auto">
-                    </div>
-                </div>
-            </div>
-
-            <button type="button" id="scan-btn" onclick="startOCRScan()"
-                class="w-full bg-primary hover:bg-blue-700 text-white font-black rounded-2xl py-4 uppercase tracking-widest text-xs shadow-xl shadow-primary/30 transition-all flex justify-center items-center gap-2">
-                <i data-lucide="sparkles" class="w-5 h-5"></i> Scan & Verify
-            </button>
-            <div id="scan-loading" class="hidden text-center py-2 animate-pulse">
-                <p class="text-[10px] font-black text-primary uppercase tracking-widest">AI is reading the receipt...</p>
             </div>
         </form>
     </div>
@@ -299,28 +289,36 @@
             <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <i data-lucide="check-square" class="w-8 h-8 text-primary"></i>
             </div>
-            <h2 class="text-2xl font-black text-textdark tracking-tight">Review Details</h2>
-            <p class="text-xs text-muted font-bold uppercase tracking-widest mt-1">Confirmed by AI (Edit if needed)</p>
+            <h2 class="text-2xl font-black text-textdark tracking-tight">Verify Details</h2>
+            <div id="ai-status" class="flex items-center justify-center gap-2 mt-1">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                <p class="text-[9px] text-primary font-black uppercase tracking-widest">AI is scanning image...</p>
+            </div>
         </div>
 
         <div class="space-y-4">
-            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
                 <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Amount (₹)</label>
-                <input type="text" id="review-amount" class="w-full bg-transparent text-lg font-black text-textdark focus:outline-none">
+                <div class="flex items-center gap-2">
+                    <input type="number" step="0.01" id="review-amount" class="w-full bg-transparent text-lg font-black text-textdark focus:outline-none" placeholder="Enter Amount">
+                </div>
             </div>
-            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
                 <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction Date</label>
                 <input type="text" id="review-date" class="w-full bg-transparent text-lg font-black text-textdark focus:outline-none" placeholder="DD/MM/YYYY">
             </div>
-            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction/Ref ID</label>
-                <input type="text" id="review-txn" class="w-full bg-transparent text-lg font-black text-textdark focus:outline-none" placeholder="Optional">
+            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
+                <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction ID</label>
+                <input type="text" id="review-txn" class="w-full bg-transparent text-lg font-black text-textdark focus:outline-none" placeholder="Reference ID (Optional)">
             </div>
         </div>
 
         <div class="mt-8 flex gap-3">
-            <button onclick="document.getElementById('review-modal').classList.add('hidden')" class="flex-1 px-6 py-4 border border-bordercolor text-textdark font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-50 transition-all">Cancel</button>
-            <button onclick="submitFinalProof()" class="flex-1 px-6 py-4 bg-primary text-white font-black rounded-2xl uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:bg-blue-700 transition-all">Save & Submit</button>
+            <button onclick="closeModals()" class="flex-1 px-6 py-4 border border-bordercolor text-textdark font-black rounded-2xl uppercase tracking-widest text-[10px] hover:bg-gray-50 transition-all">Cancel</button>
+            <button onclick="submitFinalProof()" class="flex-1 px-6 py-4 bg-primary text-white font-black rounded-2xl uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:bg-blue-700 transition-all">Upload Proof</button>
         </div>
     </div>
 </div>
@@ -359,33 +357,28 @@
     }
 
     function previewImage(input) {
-        const preview = document.getElementById('preview');
-        const previewContainer = document.getElementById('preview-container');
-        const dropZone = document.getElementById('drop-zone');
         if (input.files && input.files[0]) {
+            // Show preview in background if needed
             const reader = new FileReader();
             reader.onload = function (e) {
-                preview.src = e.target.result;
-                previewContainer.classList.remove('hidden');
-                dropZone.querySelectorAll(':scope > div:not(#preview-container), p').forEach(el => el.classList.add('hidden'));
+                document.getElementById('preview').src = e.target.result;
+                document.getElementById('preview-container').classList.remove('hidden');
+                document.getElementById('drop-zone').querySelectorAll(':scope > div:not(#preview-container), p').forEach(el => el.classList.add('hidden'));
             }
             reader.readAsDataURL(input.files[0]);
+
+            // Open Review Modal Immediately
+            document.getElementById('review-modal').classList.remove('hidden');
+            document.getElementById('upload-modal').classList.add('hidden');
+            
+            // Trigger OCR Background Scan
+            startOCRScan();
         }
     }
 
     async function startOCRScan() {
         const fileInput = document.getElementById('proof-image-input');
-        const scanBtn = document.getElementById('scan-btn');
-        const loading = document.getElementById('scan-loading');
-
-        if (!fileInput.files[0]) {
-            alert("Please select an image first.");
-            return;
-        }
-
-        scanBtn.disabled = true;
-        scanBtn.classList.add('opacity-50');
-        loading.classList.remove('hidden');
+        const aiStatus = document.getElementById('ai-status');
 
         const formData = new FormData();
         formData.append('proof_image', fileInput.files[0]);
@@ -399,23 +392,15 @@
             const data = await response.json();
 
             if (data.success) {
-                document.getElementById('review-amount').value = data.amount || "";
-                document.getElementById('review-date').value = data.date || "";
-                document.getElementById('review-txn').value = data.txn_id || "";
-                document.getElementById('review-modal').classList.remove('hidden');
-                document.getElementById('upload-modal').classList.add('hidden');
+                if(data.amount) document.getElementById('review-amount').value = data.amount;
+                if(data.date) document.getElementById('review-date').value = data.date;
+                if(data.txn_id) document.getElementById('review-txn').value = data.txn_id;
+                aiStatus.innerHTML = '<p class="text-[9px] text-green-600 font-black uppercase tracking-widest">✓ AI Scan Complete</p>';
             } else {
-                alert("AI could not read the image Clearly. Opening manual entry.");
-                document.getElementById('review-modal').classList.remove('hidden');
-                document.getElementById('upload-modal').classList.add('hidden');
+                aiStatus.innerHTML = '<p class="text-[9px] text-orange-500 font-black uppercase tracking-widest">! Manual Entry Required</p>';
             }
         } catch (error) {
-            document.getElementById('review-modal').classList.remove('hidden');
-            document.getElementById('upload-modal').classList.add('hidden');
-        } finally {
-            scanBtn.disabled = false;
-            scanBtn.classList.remove('opacity-50');
-            loading.classList.add('hidden');
+            aiStatus.innerHTML = '<p class="text-[9px] text-red-500 font-black uppercase tracking-widest">! AI Unavailable (Manual OK)</p>';
         }
     }
 
@@ -437,4 +422,3 @@
     }
 </script>
 {% endblock %}
-block %}

@@ -187,117 +187,101 @@ def notices_view(request):
     notices = Notice.objects.filter(society_name=society_name).order_by('-created_at')
     return render(request, 'core/notices.html', {'notices': notices})
 
+def extract_ocr_details(image_file):
+    """Helper to extract amount, date, and txn_id from an image file."""
+    try:
+        reader = get_ocr_reader()
+        if not reader: return {}
+        
+        # Read image
+        image_bytes = image_file.read()
+        image_file.seek(0) # Reset pointer for later use
+        img = Image.open(BytesIO(image_bytes)).convert('RGB')
+        results = reader.readtext(np.array(img))
+        text = " ".join([res[1] for res in results])
+        
+        # Cleanup
+        text = re.sub(r'([0-9])O', r'\1 0', text)
+        text = text.replace('OO', '00').replace('oo', '00')
+        
+        # Amount
+        amt_match = re.search(r'(?:Rs|INR|₹)\s*[:.]?\s*([\d,]+(?:\.\d{2})?)', text, re.IGNORECASE)
+        amount = amt_match.group(1).replace(',', '') if amt_match else ""
+        
+        # Date
+        date_match = re.search(r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})', text)
+        date_str = date_match.group(1) if date_match else ""
+        
+        # Txn ID
+        txn_match = re.search(r'(?:Ref|UTR|Txn|Transaction|ID)[:\s]*([A-Z0-9]{10,25})', text, re.IGNORECASE)
+        txn_id = txn_match.group(1) if txn_match else ""
+        
+        return {'amount': amount, 'date': date_str, 'txn_id': txn_id}
+    except Exception as e:
+        print(f"OCR Helper Error: {e}")
+        return {}
+
 @login_required
 def maintenance_view(request):
     from .models import InviteCode, PaymentProof, RentPaymentProof, SocietyMaintenanceSettings, RentalChargeSettings
     from django.utils import timezone
-    import re
     from datetime import datetime
-
+    
     is_rental = (request.user.role == 'resident' and request.user.resident_role == 'rental')
     society_name = request.user.society_name
     
-    # ─── Context Data ───
+    # Context Logic
     if is_rental:
-        # Rental Context
         rental_charge = RentalChargeSettings.objects.filter(rental_user=request.user).first()
         target_fee = rental_charge.monthly_rent if rental_charge else Decimal('0.00')
-        expected_acc = rental_charge.account_number[-4:] if rental_charge and rental_charge.account_number else None
         proofs = RentPaymentProof.objects.filter(rental_user=request.user).order_by('-created_at')
         settings_obj = rental_charge
     else:
-        # Maintenance Context
         maintenance_settings = SocietyMaintenanceSettings.objects.filter(society_name=society_name).first()
         target_fee = request.user.get_maintenance_balance()
-        expected_acc = maintenance_settings.expected_payee_account if maintenance_settings else None
-        
-        if request.user.role == 'secretary':
-            proofs = PaymentProof.objects.filter(society_name=society_name).order_by('-created_at')
-        else:
-            proofs = PaymentProof.objects.filter(user=request.user).order_by('-created_at')
+        proofs = (PaymentProof.objects.filter(society_name=society_name) if request.user.role == 'secretary' 
+                  else PaymentProof.objects.filter(user=request.user)).order_by('-created_at')
         settings_obj = maintenance_settings
 
     if request.method == 'POST' and request.FILES.get('proof_image'):
         proof_file = request.FILES.get('proof_image')
-        
-        if is_rental:
-            proof = RentPaymentProof.objects.create(
-                rental_user=request.user,
-                owner=request.user.owner,
-                proof_image=proof_file
-            )
-        else:
-            proof = PaymentProof.objects.create(
-                user=request.user,
-                society_name=society_name,
-                proof_image=proof_file
-            )
-        
-        # --- AI Verification UI Logic (OCR) ---
-        # If user provides manual edits from the popup, use them. Otherwise, run AI.
         final_amount = request.POST.get('final_amount')
         final_date_str = request.POST.get('final_date')
         final_txn_id = request.POST.get('final_txn_id')
         
-        if final_amount and final_date_str:
+        if is_rental:
+            proof = RentPaymentProof.objects.create(rental_user=request.user, owner=request.user.owner, proof_image=proof_file)
+        else:
+            proof = PaymentProof.objects.create(user=request.user, society_name=society_name, proof_image=proof_file)
+            
+        # Use provided fields or fallback to internal OCR
+        if final_amount:
             try:
                 proof.extracted_amount = Decimal(final_amount)
                 proof.transaction_id = final_txn_id
-                try:
-                    proof.extracted_date = datetime.strptime(final_date_str, "%d/%m/%Y").date()
-                except:
-                    proof.extracted_date = date.today()
-                
-                # Check for duplicates or mismatches
-                is_valid = True
-                reason = ""
-                
-                # Verify if it matches expected rules
-                if target_fee and abs(proof.extracted_amount - target_fee) > 0.1:
-                    is_valid = False
-                    reason = f"Amount mismatch (Expected ₹{target_fee})"
-                
-                if is_valid:
-                    proof.status = 'verified'
-                    messages.success(request, f"Proof uploaded and verified (₹{proof.extracted_amount})")
-                else:
-                    proof.status = 'pending'
-                    messages.warning(request, f"Uploaded, but {reason}. Needs Review.")
-                
-                proof.save()
-                return redirect('maintenance')
+                if final_date_str:
+                    try: proof.extracted_date = datetime.strptime(final_date_str, "%d/%m/%Y").date()
+                    except: proof.extracted_date = datetime.strptime(final_date_str, "%Y-%m-%d").date()
+                proof.status = 'verified' if (not target_fee or abs(proof.extracted_amount - target_fee) < 1) else 'pending'
             except Exception as e:
-                print(f"Manual Save Error: {e}")
+                print(f"Save Error: {e}")
+        else:
+            # Emergency Fallback OCR if popup was bypassed
+            details = extract_ocr_details(proof_file)
+            if details:
+                proof.extracted_amount = Decimal(details['amount']) if details.get('amount') else None
+                proof.transaction_id = details.get('txn_id')
+        
+        proof.save()
+        messages.success(request, "Proof uploaded successfully.")
+        return redirect('maintenance')
 
-        try:
-            reader = get_ocr_reader()
-            if not reader: raise Exception("OCR Reader Error")
-            
-            # Correctly open and read binary file from S3 or Local Storage
-            proof.proof_image.open('rb')
-            image_bytes = proof.proof_image.read()
-            proof.proof_image.close()
-            
-            img = Image.open(BytesIO(image_bytes)).convert('RGB')
-            results = reader.readtext(np.array(img))
-            extracted_text = " ".join([res[1] for res in results])
-            
-            # --- OCR NORMALIZATION ---
-            # OCR often confuses 'O' or 'o' with '0' (zero) in account numbers/amounts
-            extracted_text = re.sub(r'([0-9])O', r'\1 0', extracted_text)
-            extracted_text = extracted_text.replace('OO', '00').replace('oo', '00')
-            
-            # 1. Date Extraction
-            date_patterns = [r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})', r'(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4})']
-            found_date = None
-            date_range = (0,0)
-            for pattern in date_patterns:
-                match = re.search(pattern, extracted_text, re.IGNORECASE)
-                if match:
-                    date_str = match.group(1); date_range = match.span()
-                    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%y", "%d-%m-%y", "%d %b %Y"):
-                        try: found_date = datetime.strptime(date_str, fmt).date(); break
-                        except: continue
+    return render(request, 'core/maintenance.html', {
+        'proofs': proofs,
+        'target_fee': target_fee,
+        'settings': settings_obj,
+        'is_rental': is_rental
+    })
                     if found_date: break
 
             # 2. Transaction ID
@@ -687,53 +671,25 @@ def generate_proof_receipt(request, proof_id):
     return response
 
 @login_required
+@csrf_protect
 def process_ocr_preview(request):
-    """Runs OCR on an uploaded image and returns the results as JSON for the user to review/edit."""
+    """AJAX endpoint for OCR preview."""
     if request.method != 'POST':
-        return HttpResponse(status=405)
-        
+        return JsonResponse({'success': False}, status=405)
+    
     image_file = request.FILES.get('proof_image')
     if not image_file:
-        return HttpResponse("No image provided.", status=400)
-        
+        return JsonResponse({'success': False}, status=400)
+
     try:
-        reader = get_ocr_reader()
-        if not reader:
-            return HttpResponse("OCR Engine Offline", status=503)
-            
-        # Read image data
-        image_bytes = image_file.read()
-        img = Image.open(BytesIO(image_bytes)).convert('RGB')
-        results = reader.readtext(np.array(img))
-        extracted_text = " ".join([res[1] for res in results])
-        
-        # Basic parsing (re-using existing logic)
-        extracted_text = re.sub(r'([0-9])O', r'\1 0', extracted_text)
-        extracted_text = extracted_text.replace('OO', '00').replace('oo', '00')
-        
-        # Extract Amount (looking for Rs. or Currency patterns)
-        amount_match = re.search(r'(?:Rs|INR|₹)\s*[:.]?\s*([\d,]+(?:\.\d{2})?)', extracted_text, re.IGNORECASE)
-        amount = amount_match.group(1).replace(',', '') if amount_match else ""
-        
-        # Extract Date
-        date_match = re.search(r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})', extracted_text)
-        date_str = date_match.group(1) if date_match else datetime.now().strftime("%d/%m/%Y")
-        
-        # Extract Txn ID
-        txn_pattern = r'(?:Ref|UTR|Txn|Transaction|ID)[:\s]*([A-Z0-9]{10,25})'
-        txn_match = re.search(txn_pattern, extracted_text, re.IGNORECASE)
-        txn_id = txn_match.group(1) if txn_match else ""
-        
-        from django.http import JsonResponse
+        details = extract_ocr_details(image_file)
         return JsonResponse({
             'success': True,
-            'amount': amount,
-            'date': date_str,
-            'txn_id': txn_id,
-            'raw_text': extracted_text[:200]
+            'amount': details.get('amount'),
+            'date': details.get('date'),
+            'txn_id': details.get('txn_id')
         })
     except Exception as e:
-        from django.http import JsonResponse
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
