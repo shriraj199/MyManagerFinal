@@ -480,17 +480,25 @@
                     card.classList.add('border-l-4', 'border-l-green-500', 'bg-green-50/10');
                 } else {
                     parent.innerHTML = `
-                        <div class="px-4 py-1.5 bg-red-100 text-red-700 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-red-200">
+                        <div class="px-4 py-1.5 bg-rose-50 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-rose-100">
                             <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Rejected
                         </div>
                     `;
+                    card.classList.add('border-l-4', 'border-l-rose-500', 'bg-rose-50/10');
                 }
+                lucide.createIcons();
+            } else {
+                alert("Error: " + (data.message || "Failed to update proof."));
+                btn.disabled = false;
+                btn.innerHTML = action === 'approve' ? 'Accept' : 'Reject';
                 lucide.createIcons();
             }
         } catch (error) {
             console.error("Verification failed", error);
+            alert("Network Error: Could not reach server.");
             btn.disabled = false;
             btn.innerHTML = action === 'approve' ? 'Accept' : 'Reject';
+            lucide.createIcons();
         }
     }
 

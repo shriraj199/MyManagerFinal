@@ -307,23 +307,29 @@ def maintenance_view(request):
 
 @login_required
 def verify_payment_proof(request, proof_id, action):
-    """Allows a Secretary or Admin to manually approve or reject a payment proof."""
-    if request.user.role not in ['secretary', 'admin']:
-        messages.error(request, "Permission denied.")
-        return redirect('maintenance')
-        
-    from .models import PaymentProof, RentPaymentProof
-    # Check both models if needed, but maintenance is usually PaymentProof
-    proof = PaymentProof.objects.filter(id=proof_id, society_name=request.user.society_name).first()
+    """Allows a Secretary, Admin, or Owner to manually approve or reject a payment proof."""
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
     
-    if not proof:
-        # Check rental proofs if it's a rental portal context
+    from .models import PaymentProof, RentPaymentProof
+    
+    # 1. Try to find as a Maintenance Proof (Secretary/Admin)
+    proof = PaymentProof.objects.filter(id=proof_id).first()
+    if proof:
+        if request.user.role not in ['secretary', 'admin'] or proof.society_name != request.user.society_name:
+            error_msg = "Permission denied for this maintenance proof."
+            if is_ajax: return JsonResponse({'success': False, 'message': error_msg}, status=403)
+            messages.error(request, error_msg)
+            return redirect('maintenance')
+    else:
+        # 2. Try to find as a Rent Proof (Owner)
         proof = RentPaymentProof.objects.filter(id=proof_id, owner=request.user).first()
-        
-    if not proof:
-        messages.error(request, "Proof not found.")
-        return redirect('maintenance')
-        
+        if not proof:
+            error_msg = "Proof not found or access denied."
+            if is_ajax: return JsonResponse({'success': False, 'message': error_msg}, status=404)
+            messages.error(request, error_msg)
+            return redirect('maintenance')
+
+    # Status Update Logic
     if action == 'approve':
         proof.status = 'approved'
         messages.success(request, f"Proof #{proof.id} has been manually approved.")
@@ -331,12 +337,19 @@ def verify_payment_proof(request, proof_id, action):
         proof.status = 'rejected'
         messages.warning(request, f"Proof #{proof.id} has been rejected.")
     else:
-        messages.error(request, "Invalid action.")
+        error_msg = "Invalid action requested."
+        if is_ajax: return JsonResponse({'success': False, 'message': error_msg}, status=400)
+        messages.error(request, error_msg)
+        return redirect('maintenance')
         
     proof.save()
     
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'success': True, 'status': proof.status, 'message': f"Proof {action}ed successfully."})
+    if is_ajax:
+        return JsonResponse({
+            'success': True, 
+            'status': proof.status, 
+            'message': f"Proof {action}ed successfully."
+        })
         
     return redirect('maintenance')
 
