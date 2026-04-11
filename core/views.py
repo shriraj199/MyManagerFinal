@@ -238,8 +238,10 @@ def extract_ocr_details(image_file):
         print(f"Gemini API Error: {e}")
         return {}
 
+from django.views.decorators.csrf import csrf_exempt
+
 @login_required
-@csrf_protect
+@csrf_exempt
 def process_ocr_preview(request):
     """AJAX endpoint for OCR preview."""
     if request.method != 'POST':
