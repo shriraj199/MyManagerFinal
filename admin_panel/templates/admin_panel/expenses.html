@@ -12,7 +12,18 @@
         </div>
     </div>
 
+    <!-- Tabs Navigation -->
+    <div class="flex items-center bg-gray-200/50 p-1.5 rounded-[1.5rem] mb-8">
+        <button id="tab-btn-history" onclick="switchTab('history')" class="flex-1 py-3.5 text-[11px] font-black tracking-widest uppercase transition-all rounded-xl bg-white text-primary shadow-sm">
+            History
+        </button>
+        <button id="tab-btn-add" onclick="switchTab('add')" class="flex-1 py-3.5 text-[11px] font-black tracking-widest uppercase transition-all rounded-xl text-muted hover:text-textdark">
+            New Expense
+        </button>
+    </div>
+
     <!-- Add Expense Form -->
+    <div id="tab-add" class="hidden">
     <div class="bg-white rounded-[2.5rem] border border-bordercolor shadow-sm p-8 mb-10">
         <h2 class="text-lg font-black text-textdark tracking-tight mb-6 flex items-center">
             <div class="w-8 h-8 bg-blue-50 text-primary rounded-xl flex items-center justify-center mr-3">
@@ -57,8 +68,10 @@
             </button>
         </form>
     </div>
+    </div>
 
     <!-- List -->
+    <div id="tab-history" class="block">
     <h2 class="text-[10px] font-black text-muted uppercase tracking-widest px-1 mb-6 flex items-center">
         <i data-lucide="history" class="w-3 h-3 mr-2"></i>
         Expense History
@@ -104,9 +117,37 @@
         </div>
         {% endfor %}
     </div>
+    </div>
 </div>
 
 <script>
+    function switchTab(tab) {
+        const historyBtn = document.getElementById('tab-btn-history');
+        const addBtn = document.getElementById('tab-btn-add');
+        const historyTab = document.getElementById('tab-history');
+        const addTab = document.getElementById('tab-add');
+
+        if (tab === 'add') {
+            addBtn.classList.add('bg-white', 'text-primary', 'shadow-sm');
+            addBtn.classList.remove('text-muted', 'hover:text-textdark');
+            
+            historyBtn.classList.remove('bg-white', 'text-primary', 'shadow-sm');
+            historyBtn.classList.add('text-muted', 'hover:text-textdark');
+            
+            historyTab.classList.replace('block', 'hidden');
+            addTab.classList.replace('hidden', 'block');
+        } else {
+            historyBtn.classList.add('bg-white', 'text-primary', 'shadow-sm');
+            historyBtn.classList.remove('text-muted', 'hover:text-textdark');
+            
+            addBtn.classList.remove('bg-white', 'text-primary', 'shadow-sm');
+            addBtn.classList.add('text-muted', 'hover:text-textdark');
+            
+            addTab.classList.replace('block', 'hidden');
+            historyTab.classList.replace('hidden', 'block');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const fileInput = document.querySelector('input[name="receipt"]');
         const fileChosen = document.getElementById('file-chosen');
