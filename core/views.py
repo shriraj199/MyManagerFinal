@@ -190,31 +190,14 @@ def extract_ocr_details(image_file):
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # Prepare image and resize if needed to speed up / avoid limits
+        # Prepare image and resize even smaller for speed (avoid Vercel timeouts)
         img = Image.open(BytesIO(image_bytes))
-        if img.width > 1200:
-            ratio = 1200 / float(img.width)
+        if img.width > 800:
+            ratio = 800 / float(img.width)
             new_height = int(float(img.height) * ratio)
-            img = img.resize((1200, new_height), Image.Resampling.LANCZOS)
+            img = img.resize((800, new_height), Image.Resampling.LANCZOS)
         
-        prompt = """
-        ACT AS AN OCR SPECIALIST. Analyze this Indian UPI payment receipt (GPay, PhonePe, Paytm).
-        Locate:
-        1. Total Amount Paid.
-        2. Date of transaction.
-        3. Transaction ID / UTR / UPI Ref No.
-        4. The last 4 digits of the account number used/mentioned.
-        
-        Return EXACTLY this JSON format and nothing else:
-        {
-          "amount": float,
-          "date": "DD/MM/YYYY",
-          "txn_id": "string",
-          "acc_digits": "string"
-        }
-        
-        If not found, use null. Be very precise.
-        """
+        prompt = "OCR this UPI receipt. Return JSON only: {amount: float, date: DD/MM/YYYY, txn_id: string, acc_digits: last 4 digits}"
         
         # Permissive safety settings for PII receipts
         safety_settings = [
