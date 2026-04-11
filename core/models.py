@@ -230,7 +230,13 @@ class Expense(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True, null=True)
     society_name = models.CharField(max_length=200, db_index=True)
+    receipt = models.ImageField(upload_to='expenses/receipts/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.receipt:
+            process_image(self.receipt)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.payee_name} - ₹{self.amount} ({self.society_name})"

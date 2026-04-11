@@ -60,12 +60,14 @@ def expenses_list(request):
         payee_name = request.POST.get('payee_name')
         amount = request.POST.get('amount')
         description = request.POST.get('description')
+        receipt = request.FILES.get('receipt')
         
         Expense.objects.create(
             payee_name=payee_name,
             amount=amount,
             description=description,
-            society_name=society_name
+            society_name=society_name,
+            receipt=receipt
         )
         messages.success(request, f"Recorded expense for {payee_name}")
         return redirect('admin_expenses')
