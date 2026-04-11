@@ -84,18 +84,16 @@
             </div>
             <div class="flex-1 min-w-0 pr-3">
                 <h3 class="font-black text-textdark text-sm md:text-lg truncate w-full mb-0.5">{{ exp.payee_name }}</h3>
-                <div class="flex items-center gap-1.5 md:gap-2">
-                    <span class="text-[8px] md:text-[9px] font-black text-muted uppercase tracking-widest bg-gray-50 py-0.5 px-1.5 md:px-2 rounded-full shrink-0">{{ exp.created_at|date:"d M" }}</span>
-                    <p class="text-[10px] md:text-xs font-bold text-muted truncate flex-1 min-w-0">{{ exp.description|default:"No desc" }}</p>
-                </div>
+                <span class="inline-block text-[8px] md:text-[9px] font-black text-muted uppercase tracking-widest bg-gray-50 py-0.5 px-1.5 md:px-2 rounded-full shrink-0 mb-1.5">{{ exp.created_at|date:"d M" }}</span>
+                <p class="text-[10px] md:text-xs font-bold text-muted break-words leading-tight">{{ exp.description|default:"No desc" }}</p>
             </div>
             <div class="flex items-center justify-end shrink-0">
                 <div class="flex flex-col items-end mr-2 md:mr-4">
                     <p class="text-base md:text-xl font-black text-rose-500 tracking-tight">-₹{{ exp.amount }}</p>
                     {% if exp.receipt %}
-                    <a href="{{ exp.receipt.url }}" target="_blank" class="text-[9px] md:text-[10px] font-bold text-primary flex items-center hover:underline mt-0.5 md:mt-1">
+                    <button type="button" onclick="showReceipt('{{ exp.receipt.url }}')" class="text-[9px] md:text-[10px] font-bold text-primary flex items-center hover:underline mt-0.5 md:mt-1 cursor-pointer bg-transparent border-0">
                         <i data-lucide="image" class="w-3 h-3 mr-1"></i>View
-                    </a>
+                    </button>
                     {% endif %}
                 </div>
                 
@@ -121,6 +119,22 @@
 </div>
 
 <script>
+    function showReceipt(url) {
+        Swal.fire({
+            imageUrl: url,
+            imageAlt: 'Receipt',
+            showCloseButton: true,
+            showConfirmButton: false,
+            padding: '1rem',
+            background: '#ffffff',
+            customClass: {
+                popup: 'rounded-[2rem]',
+                image: 'rounded-xl max-h-[70vh] object-contain',
+                closeButton: 'focus:outline-none'
+            }
+        });
+    }
+
     function switchTab(tab) {
         const historyBtn = document.getElementById('tab-btn-history');
         const addBtn = document.getElementById('tab-btn-add');
