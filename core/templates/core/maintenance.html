@@ -267,7 +267,26 @@
         </div>
 
         <form id="upload-form" method="post" enctype="multipart/form-data" class="space-y-6">
-            <div class="space-y-4">
+            <div id="capture-step" class="space-y-6">
+                <div class="relative group">
+                    <input type="file" name="proof_image" id="proof-image-input" accept="image/*" required
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this)">
+                    <div id="drop-zone"
+                        class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2rem] p-12 flex flex-col items-center justify-center text-center group-hover:border-primary group-hover:bg-blue-50/50 transition-all">
+                        <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-all">
+                            <i data-lucide="image" class="w-8 h-8 text-primary"></i>
+                        </div>
+                        <p class="text-xs font-black text-muted uppercase tracking-widest">Select Payment Screenshot</p>
+                        <p class="text-[9px] text-muted mt-2">(GPay, PhonePe, Paytm supported)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="review-step" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div class="bg-gray-50 border border-gray-100 rounded-3xl overflow-hidden mb-4">
+                    <img id="preview" class="w-full max-h-48 object-contain bg-white">
+                </div>
+
                 <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
                     <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Amount Paid (₹)</label>
                     <input type="number" name="amount" id="form-amount" step="0.01" required 
@@ -281,35 +300,26 @@
                                class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="DD/MM/YYYY">
                     </div>
                     <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
-                        <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Acc. Digits (Last 4)</label>
+                        <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Acc. Digits</label>
                         <input type="text" name="account_digits" id="form-acc" maxlength="4" required 
-                               class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="e.g. 1234">
+                               class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="Last 4">
                     </div>
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
-                    <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction ID / UTR</label>
+                    <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Txn ID / UTR</label>
                     <input type="text" name="txn_id" id="form-txn" required 
-                           class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="UTR or Transaction No.">
+                           class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="UTR Number">
                 </div>
 
-                <div class="relative group">
-                    <input type="file" name="proof_image" id="proof-image-input" accept="image/*" required
-                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this)">
-                    <div id="drop-zone"
-                        class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center group-hover:border-primary group-hover:bg-blue-50/50 transition-all">
-                        <div id="preview-placeholder">
-                            <i data-lucide="image" class="w-6 h-6 text-primary mb-2"></i>
-                            <p class="text-[10px] font-bold text-muted uppercase tracking-widest">Select Screenshot</p>
-                        </div>
-                        <img id="preview" class="hidden rounded-xl max-h-32 border border-bordercolor shadow-md mx-auto">
-                    </div>
-                </div>
+                <button type="submit" class="w-full mt-2 bg-primary hover:bg-blue-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-primary/30 transition-all">
+                    Confirm & Upload Proof
+                </button>
+                
+                <button type="button" onclick="resetForm()" class="w-full text-[9px] text-muted font-bold uppercase tracking-widest py-2">
+                    Reselect Image
+                </button>
             </div>
-
-            <button type="submit" class="w-full mt-6 bg-primary hover:bg-blue-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-primary/30 transition-all">
-                Submit Payment Proof
-            </button>
         </form>
     </div>
 </div>
@@ -342,14 +352,21 @@
             const reader = new FileReader();
             reader.onload = function (e) {
                 document.getElementById('preview').src = e.target.result;
-                document.getElementById('preview').classList.remove('hidden');
-                document.getElementById('preview-placeholder').classList.add('hidden');
             }
             reader.readAsDataURL(input.files[0]);
             
-            // Trigger AI Auto-fill
+            // Switch to review step and scan
+            document.getElementById('capture-step').classList.add('hidden');
+            document.getElementById('review-step').classList.remove('hidden');
             startOCRScan();
         }
+    }
+
+    function resetForm() {
+        document.getElementById('upload-form').reset();
+        document.getElementById('review-step').classList.add('hidden');
+        document.getElementById('capture-step').classList.remove('hidden');
+        document.getElementById('ai-status').classList.add('hidden');
     }
 
     async function startOCRScan() {
