@@ -180,8 +180,11 @@ if os.environ.get('AWS_ACCESS_KEY_ID'):
     # Reverted to Public ACL: S3 Signed URLs break standard HTML5 <video> streaming tags on Mobile/Safari.
     AWS_DEFAULT_ACL = 'public-read'
     AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_FILE_OVERWRITE = True # FIX: Set to True to avoid 'HeadObject' 403 Forbidden checks during upload
     AWS_S3_SIGN_IN_URL_QUERY_PARAM = False
+    
+    # Extra compatibility for Supabase/Custom S3 Endpoints
+    AWS_S3_VERIFY = False 
 
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': 'max-age=86400',
