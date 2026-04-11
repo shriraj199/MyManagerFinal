@@ -395,6 +395,9 @@
         try {
             const response = await fetch("{% url 'process_ocr_preview' %}", {
                 method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
                 body: formData
             });
             const data = await response.json();
@@ -410,7 +413,9 @@
             if (data.success) {
                 let filled = false;
                 if (data.amount !== undefined && data.amount !== null) {
-                    amountInput.value = data.amount;
+                    // Clean amount (remove commas/spaces)
+                    const cleanAmount = String(data.amount).replace(/[^\d.]/g, '');
+                    amountInput.value = cleanAmount;
                     filled = true;
                 }
                 if (data.date) {
