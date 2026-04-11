@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex flex-col flex-1 max-w-lg mx-auto w-full p-6 pb-24">
+    <!-- Header -->
+    <div class="flex items-center mb-8 gap-4">
+        <a href="{% url 'home' %}" class="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex flex-shrink-0 items-center justify-center shadow-sm hover:bg-gray-50 transition active:scale-90">
+            <i data-lucide="arrow-left" class="w-6 h-6 text-textdark"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-extrabold text-textdark tracking-tight leading-none mb-1">Company Profile</h1>
+            <p class="text-[10px] font-black text-muted uppercase tracking-widest">TheManager &bull; Core Identity</p>
+        </div>
+    </div>
+
+    <!-- About Section -->
+    <div class="bg-white rounded-[2.5rem] border border-bordercolor shadow-sm p-8 mb-6">
+        <div class="w-16 h-16 bg-blue-50 text-primary rounded-[1.5rem] flex items-center justify-center mb-6">
+            <i data-lucide="info" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-black text-textdark tracking-tight mb-4">Meet TheManager</h2>
+        <p class="text-sm font-medium text-muted leading-relaxed mb-6">
+            Managing finances is hard—so we made it simple. <span class="text-textdark font-bold">TheManager</span> is a unified accounting platform designed to eliminate errors and reclaim your time. Whether you’re an accountant or a society manager, our goal is to provide real-time insights that drive smarter decisions.
+        </p>
+        
+        <div class="pt-6 border-t border-gray-50">
+            <h3 class="text-sm font-black text-textdark uppercase tracking-widest mb-3">What We Do</h3>
+            <p class="text-sm font-medium text-muted leading-relaxed">
+                We bridge the gap between complex accounting and everyday usability. Through automated bookkeeping and secure multi-user collaboration, we help you focus on what truly matters: <span class="text-primary font-bold">Growth</span>.
+            </p>
+        </div>
+    </div>
+
+    <!-- Contact Section -->
+    <div class="grid grid-cols-1 gap-4 mb-6">
+        <div class="bg-white p-6 rounded-[2rem] border border-bordercolor shadow-sm flex items-center gap-5 transition hover:shadow-md">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <i data-lucide="phone" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-0.5">Phone / WhatsApp</p>
+                <p class="text-base font-black text-textdark truncate">7410191867</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] border border-bordercolor shadow-sm flex items-center gap-5 transition hover:shadow-md">
+            <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                <i data-lucide="mail" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+                <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-0.5">Email Support</p>
+                <p class="text-base font-black text-textdark truncate">TheManagerSupport@gmail.com</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Details Card -->
+    <div class="bg-[#1a1a2e] rounded-[2.5rem] p-8 shadow-2xl shadow-blue-900/20 relative overflow-hidden group">
+        <!-- Decorative Gradient -->
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-[80px] group-hover:bg-primary/30 transition-all duration-700"></div>
+        
+        <div class="flex items-center justify-between mb-8 relative z-10">
+            <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                <i data-lucide="landmark" class="w-6 h-6 text-white"></i>
+            </div>
+            <span class="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Bank Details</span>
+        </div>
+
+        <div class="space-y-6 relative z-10">
+            <div>
+                <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Bank Name</p>
+                <p class="text-xl font-black text-white tracking-tight">Indian Overseas Bank</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Account Number</p>
+                    <p class="text-base font-black text-white/90">145701000008599</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">IFSC Code</p>
+                    <p class="text-base font-black text-white/90 uppercase">IOBA0001457</p>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-white/5 flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Name of Payee</p>
+                    <p class="text-sm font-bold text-white/80">Devesh Santosh Bhoir</p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-primary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Section (Current Logged In User) -->
+    <div class="mt-10 pt-10 border-t border-gray-100">
+        <h2 class="text-[10px] font-black text-muted uppercase tracking-widest mb-6 px-2">Account Session</h2>
+        <div class="bg-gray-50/80 p-6 rounded-[2rem] flex items-center justify-between border border-transparent hover:border-bordercolor transition">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-textdark font-black shadow-sm">
+                    {{ request.user.first_name|first|default:request.user.username|first|upper }}
+                </div>
+                <div>
+                    <p class="text-sm font-black text-textdark">{{ request.user.get_full_name|default:request.user.username }}</p>
+                    <p class="text-[10px] font-bold text-muted uppercase tracking-widest">{{ request.user.role|capfirst }} Account</p>
+                </div>
+            </div>
+            <a href="{% url 'logout' %}" class="w-10 h-10 rounded-xl flex items-center justify-center text-muted hover:bg-rose-50 hover:text-rose-500 transition active:scale-90">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

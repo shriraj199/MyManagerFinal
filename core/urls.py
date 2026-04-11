@@ -28,7 +28,7 @@ urlpatterns = [
     path('members/', views.members_view, name='members'),
     path('vehicles/', views.placeholder_view, {'feature_name': 'Vehicles'}, name='vehicles'),
     path('emergency/', views.placeholder_view, {'feature_name': 'Emergency'}, name='emergency'),
-    path('profile/', views.placeholder_view, {'feature_name': 'Profile'}, name='profile'),
+    path('profile/', views.profile_view, name='profile'),
     
     # PWA Service Worker
     path('sw.js', TemplateView.as_view(template_name='core/pwa/sw.js', content_type='application/javascript'), name='sw_js'),
