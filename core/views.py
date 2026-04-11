@@ -321,19 +321,36 @@ def maintenance_view(request):
                 try: proof.extracted_date = datetime.strptime(date_str, "%Y-%m-%d").date()
                 except: pass
         
-        # Verification Logic
-        # User requested: Compare amount, account digits (from secretary settings), and subtract from fees
-        expected_acc = settings_obj.expected_payee_account if not is_rental and settings_obj else None
+        # Comparison Logic
+        is_flagged = False
+        reasons = []
         
-        # Auto-verify if conditions met, otherwise it still subtracts if we set to 'verified'
-        # To "subtract from fees", the proof MUST be in 'verified' or 'approved' state
-        proof.status = 'verified'
+        # 1. Account Number Check (from secretary/owner settings)
+        expected_acc = None
+        if is_rental:
+            expected_acc = settings_obj.account_number[-4:] if settings_obj and settings_obj.account_number else None
+        else:
+            expected_acc = settings_obj.expected_payee_account if settings_obj else None
+
+        if expected_acc and acc_digits and str(acc_digits) != str(expected_acc):
+            is_flagged = True
+            reasons.append(f"Account Mismatch (Expected {expected_acc})")
+            
+        # 2. Date Check
+        if proof.extracted_date and proof.extracted_date != date.today():
+             is_flagged = True
+             reasons.append(f"Date Mismatch (Not Today)")
         
-        # If account digits provided but don't match, we could flag it, 
-        # but the request says "if it doesn't match just subtract", so we verify it anyway.
+        # Note: Amount mismatch is NOT flagged, but only the actual amount paid is subtracted.
         
+        if is_flagged:
+            proof.status = 'flagged'
+            messages.warning(request, f"Warning: {', '.join(reasons)}. Payment recorded but marked for review.")
+        else:
+            proof.status = 'verified'
+            messages.success(request, f"Success! ₹{amt_paid} has been recorded and subtracted from your balance.")
+            
         proof.save()
-        messages.success(request, f"Success: ₹{amt_paid} has been recorded and subtracted from your outstanding balance.")
         return redirect('maintenance')
 
     return render(request, 'core/maintenance.html', {

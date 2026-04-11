@@ -64,7 +64,7 @@ class User(AbstractUser):
         
         # 1. Historical Credit Carry-over
         # Total payments made by user
-        total_payments = self.payment_proofs.filter(status__in=['verified', 'approved']).aggregate(models.Sum('extracted_amount'))['extracted_amount__sum'] or Decimal('0.00')
+        total_payments = self.payment_proofs.filter(status__in=['verified', 'approved', 'flagged']).aggregate(models.Sum('extracted_amount'))['extracted_amount__sum'] or Decimal('0.00')
         
         # Total liabilities generated BEFORE this month
         historical_liabilities = Bill.objects.filter(user=self).exclude(month=month_name, year=year).aggregate(models.Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
