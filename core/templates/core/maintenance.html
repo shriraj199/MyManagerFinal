@@ -254,6 +254,13 @@
         class="bg-white rounded-[2.5rem] w-full max-w-lg p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-extrabold text-textdark tracking-tight">Upload Proof</h2>
+            <div id="ai-status" class="hidden items-center gap-2">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                <p class="text-[9px] text-primary font-black uppercase tracking-widest">Scanning...</p>
+            </div>
             <button onclick="closeModals()" class="p-2 text-muted hover:text-textdark">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
@@ -275,14 +282,14 @@
                     </div>
                     <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
                         <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Acc. Digits (Last 4)</label>
-                        <input type="text" name="account_digits" maxlength="4" required 
+                        <input type="text" name="account_digits" id="form-acc" maxlength="4" required 
                                class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="e.g. 1234">
                     </div>
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
                     <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction ID / UTR</label>
-                    <input type="text" name="txn_id" required 
+                    <input type="text" name="txn_id" id="form-txn" required 
                            class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="UTR or Transaction No.">
                 </div>
 
@@ -339,6 +346,59 @@
                 document.getElementById('preview-placeholder').classList.add('hidden');
             }
             reader.readAsDataURL(input.files[0]);
+            
+            // Trigger AI Auto-fill
+            startOCRScan();
+        }
+    }
+
+    async function startOCRScan() {
+        const fileInput = document.getElementById('proof-image-input');
+        const aiStatus = document.getElementById('ai-status');
+        const amountInput = document.getElementById('form-amount');
+        const dateInput = document.getElementById('form-date');
+        const accInput = document.getElementById('form-acc');
+        const txnInput = document.getElementById('form-txn');
+
+        if (!fileInput.files[0]) return;
+
+        aiStatus.classList.remove('hidden');
+        aiStatus.classList.add('flex');
+
+        const formData = new FormData();
+        formData.append('proof_image', fileInput.files[0]);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        try {
+            const response = await fetch("{% url 'process_ocr_preview' %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                body: formData
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                if (data.amount) {
+                    const cleanAmount = String(data.amount).replace(/[^\d.]/g, '');
+                    amountInput.value = cleanAmount;
+                }
+                if (data.date) dateInput.value = data.date;
+                if (data.acc_digits) accInput.value = data.acc_digits;
+                if (data.txn_id) txnInput.value = data.txn_id;
+
+                // Visual feedback
+                [amountInput, dateInput, accInput, txnInput].forEach(el => {
+                    if (el.value) {
+                        el.parentElement.classList.add('ring-2', 'ring-green-400', 'animate-pulse');
+                        setTimeout(() => el.parentElement.classList.remove('ring-2', 'ring-green-400', 'animate-pulse'), 2000);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("AI Error:", error);
+        } finally {
+            aiStatus.classList.add('hidden');
+            aiStatus.classList.remove('flex');
         }
     }
 

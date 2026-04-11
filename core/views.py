@@ -171,7 +171,107 @@ def notices_view(request):
     notices = Notice.objects.filter(society_name=society_name).order_by('-created_at')
     return render(request, 'core/notices.html', {'notices': notices})
 
+def extract_ocr_details(image_file):
+    """Helper to extract details using Google Gemini Flash (Vision)."""
+    api_key = os.environ.get('GEMINI_API_KEY')
+    
+    if not api_key:
+        print("CRITICAL: GEMINI_API_KEY missing from environment.")
+        return {}
 
+    # Reset file pointer
+    image_file.seek(0)
+    image_bytes = image_file.read()
+    image_file.seek(0)
+    
+    try:
+        from google.generativeai.types import HarmCategory, HarmBlockThreshold
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Prepare image and resize if needed to speed up / avoid limits
+        img = Image.open(BytesIO(image_bytes))
+        if img.width > 1200:
+            ratio = 1200 / float(img.width)
+            new_height = int(float(img.height) * ratio)
+            img = img.resize((1200, new_height), Image.Resampling.LANCZOS)
+        
+        prompt = """
+        ACT AS AN OCR SPECIALIST. Analyze this Indian UPI payment receipt (GPay, PhonePe, Paytm).
+        Locate:
+        1. Total Amount Paid.
+        2. Date of transaction.
+        3. Transaction ID / UTR / UPI Ref No.
+        4. The last 4 digits of the account number used/mentioned.
+        
+        Return EXACTLY this JSON format and nothing else:
+        {
+          "amount": float,
+          "date": "DD/MM/YYYY",
+          "txn_id": "string",
+          "acc_digits": "string"
+        }
+        
+        If not found, use null. Be very precise.
+        """
+        
+        # Permissive safety settings for PII receipts
+        safety_settings = {
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        }
+        
+        response = model.generate_content([prompt, img], safety_settings=safety_settings)
+        
+        # Check if we got a valid response (not blocked by safety filters)
+        if not response.candidates or not response.candidates[0].content.parts:
+            print(f"DEBUG AI: Blocked or Empty response.")
+            return {}
+
+        clean_resp = response.text.replace('```json', '').replace('```', '').strip()
+        
+        # Locate JSON content within potential text
+        match = re.search(r'\{.*\}', clean_resp, re.DOTALL)
+        if match:
+            data = json.loads(match.group(0))
+        else:
+            data = {}
+            
+        return {
+            'amount': data.get('amount'),
+            'date': data.get('date'),
+            'txn_id': data.get('txn_id'),
+            'acc_digits': data.get('acc_digits')
+        }
+    except Exception as e:
+        print(f"Gemini API Error: {e}")
+        return {}
+
+@login_required
+@csrf_protect
+def process_ocr_preview(request):
+    """AJAX endpoint for OCR preview."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    
+    image_file = request.FILES.get('proof_image')
+    if not image_file:
+        return JsonResponse({'success': False}, status=400)
+
+    try:
+        details = extract_ocr_details(image_file)
+        return JsonResponse({
+            'success': True,
+            'amount': details.get('amount'),
+            'date': details.get('date'),
+            'txn_id': details.get('txn_id'),
+            'acc_digits': details.get('acc_digits')
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
 def maintenance_view(request):
