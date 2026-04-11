@@ -171,7 +171,9 @@ if os.environ.get('AWS_ACCESS_KEY_ID'):
     AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '').strip()
     AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '').strip()
     AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '').strip()
-    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'ap-southeast-1').strip()
+    
+    # FIX: Supabase S3 signatures require 'us-east-1' from boto3 regardless of actual deployment location
+    AWS_S3_REGION_NAME = 'us-east-1'
     
     # FIX: Use Supabase /object/public/ gateway for browser-accessible URLs
     project_host = AWS_S3_ENDPOINT_URL.split('://')[1].replace('/s3', '')
