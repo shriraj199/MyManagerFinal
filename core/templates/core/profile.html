@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <div class="flex flex-col flex-1 max-w-lg mx-auto w-full p-6 pb-24">
     <!-- Header -->
@@ -94,6 +95,25 @@
         </div>
     </div>
 
+    <!-- UPI QR Section -->
+    <div class="mt-6 bg-white rounded-[2.5rem] border border-bordercolor shadow-sm p-8 text-center transition hover:shadow-md">
+        <h3 class="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-6">UPI Payment</h3>
+        
+        <div class="inline-block p-4 bg-gray-50 rounded-[2rem] mb-6">
+            <img src="{% static 'core/images/upi_qr.png' %}" alt="UPI QR Code" class="w-48 h-48 md:w-56 md:h-56 mx-auto rounded-xl">
+        </div>
+        
+        <div class="mb-4">
+            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">UPI ID</p>
+            <div class="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+                <span class="text-sm font-black text-textdark">deveshbhoir3677@okhdfcbank</span>
+                <i data-lucide="copy" class="w-3 h-3 text-muted cursor-pointer hover:text-primary transition" onclick="copyUPI()"></i>
+            </div>
+        </div>
+        
+        <p class="text-[10px] font-bold text-muted italic">Scan to pay with any UPI app</p>
+    </div>
+
     <!-- User Section (Current Logged In User) -->
     <div class="mt-10 pt-10 border-t border-gray-100">
         <h2 class="text-[10px] font-black text-muted uppercase tracking-widest mb-6 px-2">Account Session</h2>
@@ -113,4 +133,22 @@
         </div>
     </div>
 </div>
+
+<script>
+    function copyUPI() {
+        const upi = "deveshbhoir3677@okhdfcbank";
+        navigator.clipboard.writeText(upi).then(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'UPI ID Copied',
+                text: upi,
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'rounded-[2rem]'
+                }
+            });
+        });
+    }
+</script>
 {% endblock %}
