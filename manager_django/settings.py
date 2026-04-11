@@ -171,7 +171,7 @@ if os.environ.get('AWS_ACCESS_KEY_ID'):
     AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '').strip()
     AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '').strip()
     AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '').strip()
-    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'ap-southeast-1')
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'ap-southeast-1').strip()
     
     # FIX: Use Supabase /object/public/ gateway for browser-accessible URLs
     project_host = AWS_S3_ENDPOINT_URL.split('://')[1].replace('/s3', '')
@@ -185,6 +185,8 @@ if os.environ.get('AWS_ACCESS_KEY_ID'):
     
     # Extra compatibility for Supabase/Custom S3 Endpoints
     AWS_S3_VERIFY = False 
+    AWS_S3_ADDRESSING_STYLE = 'path'
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
 
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': 'max-age=86400',
