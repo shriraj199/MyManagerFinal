@@ -158,7 +158,6 @@ CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = [
-    'https://managerapp-six.vercel.app',
     'https://managerapp-pearl.vercel.app',
 ]
 
