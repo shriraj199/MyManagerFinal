@@ -31,6 +31,16 @@
 </head>
 
 <body class="bg-gray-50 text-textdark antialiased font-sans flex min-h-screen">
+    <!-- Preloader -->
+    <div id="page-preloader" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="relative w-14 h-14">
+            <div class="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            <img src="{% static 'core/pwa/logo.png' %}" class="absolute inset-0 w-6 h-6 m-auto rounded-md shadow-sm" alt="">
+        </div>
+        <p class="mt-4 text-xs font-bold text-primary tracking-widest uppercase animate-pulse">Loading...</p>
+    </div>
+
     {% if user.is_authenticated %}
     <!-- Mobile Header -->
     <div
@@ -234,6 +244,46 @@
     </style>
 
     <script>
+        // Preloader Logic
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('page-preloader');
+            if (preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                }, 300);
+            }
+        });
+
+        // Show preloader on internal navigation
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && !link.hasAttribute('download') && link.target !== '_blank' && 
+                link.href && !link.href.startsWith('javascript:') && !link.href.startsWith('mailto:') && 
+                !link.href.startsWith('tel:') && link.origin === window.location.origin) {
+                
+                // Do not show for hash links pointing to the same page
+                if (link.hash && link.pathname === window.location.pathname) return;
+
+                const preloader = document.getElementById('page-preloader');
+                if (preloader) {
+                    preloader.style.display = 'flex';
+                    requestAnimationFrame(() => preloader.style.opacity = '1');
+                }
+            }
+        });
+
+        // Show preloader on form submission
+        document.addEventListener('submit', (e) => {
+           if(e.target && e.target.target !== '_blank') {
+                const preloader = document.getElementById('page-preloader');
+                if (preloader) {
+                    preloader.style.display = 'flex';
+                    requestAnimationFrame(() => preloader.style.opacity = '1');
+                }
+           }
+        });
+
         lucide.createIcons();
 
         // AGGRESSIVE CLEANUP: Kill all existing service workers once automatically
