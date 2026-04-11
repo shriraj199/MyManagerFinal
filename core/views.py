@@ -217,19 +217,24 @@ def extract_ocr_details(image_file):
         """
         
         # Permissive safety settings for PII receipts
-        safety_settings = {
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        }
+        safety_settings = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        ]
         
         response = model.generate_content([prompt, img], safety_settings=safety_settings)
         
         # Check if we got a valid response (not blocked by safety filters)
-        if not response.candidates or not response.candidates[0].content.parts:
-            print(f"DEBUG AI: Blocked or Empty response.")
-            return {}
+        if not response.candidates:
+            print(f"DEBUG AI: No candidates returned.")
+            return {'error': 'No response from AI'}
+            
+        if not response.candidates[0].content.parts:
+            reason = response.candidates[0].finish_reason
+            print(f"DEBUG AI: Blocked response. Reason: {reason}")
+            return {'error': f'AI Blocked: {reason}'}
 
         clean_resp = response.text.replace('```json', '').replace('```', '').strip()
         
@@ -263,6 +268,9 @@ def process_ocr_preview(request):
 
     try:
         details = extract_ocr_details(image_file)
+        if 'error' in details:
+            return JsonResponse({'success': False, 'error': details['error']}, status=200)
+            
         return JsonResponse({
             'success': True,
             'amount': details.get('amount'),

@@ -393,6 +393,9 @@
                         setTimeout(() => el.parentElement.classList.remove('ring-2', 'ring-green-400', 'animate-pulse'), 2000);
                     }
                 });
+            } else if (data.error) {
+                console.error("AI Scan Error:", data.error);
+                // Optional: show a small toast or subtle hint
             }
         } catch (error) {
             console.error("AI Error:", error);
