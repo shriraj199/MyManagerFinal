@@ -31,9 +31,23 @@
 </head>
 
 <body class="bg-gray-50 text-textdark antialiased font-sans flex min-h-screen">
-    <!-- Top Progress Bar Preloader -->
-    <div id="page-preloader"
-        class="fixed top-0 left-0 w-full h-1 z-[10000] overflow-hidden opacity-0 pointer-events-none transition-opacity duration-300">
+    <!-- Splash Screen (App Start) -->
+    <div id="splash-preloader" class="fixed inset-0 bg-white z-[10000] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="relative w-20 h-20">
+            <div class="absolute inset-0 rounded-full border-4 border-blue-50"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            <img src="{% static 'core/pwa/logo.png' %}" class="absolute inset-0 w-10 h-10 m-auto rounded-xl shadow-md" alt="Logo">
+        </div>
+        <p class="mt-6 text-sm font-bold text-primary tracking-widest uppercase animate-pulse">TheManager</p>
+    </div>
+    <script>
+        if (sessionStorage.getItem('app_started') === 'true') {
+            document.getElementById('splash-preloader').style.display = 'none';
+        }
+    </script>
+
+    <!-- Top Progress Bar (Navigation) -->
+    <div id="nav-preloader" class="fixed top-0 left-0 w-full h-1 z-[9999] overflow-hidden opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="h-full bg-primary animate-loading-bar rounded-r-full shadow-[0_0_10px_rgba(37,99,235,1)]"></div>
     </div>
 
@@ -132,7 +146,7 @@
                 class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.path == maintenance_url %}bg-blue-50 text-primary font-bold shadow-sm shadow-blue-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">
                 <i data-lucide="banknote" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
                 <span class="text-sm tracking-wide">
-                    {% if user.role == 'resident' and user.resident_role == 'rental' %}Rent{% else %}Maintenance
+                    {% if user.role == 'resident' and user.resident_role == 'rental' %}Rent{% else %}Maintenance{% endif %}
                 </span>
             </a>
             {% endif %}
@@ -257,9 +271,20 @@
     <script>
         // Preloader Logic
         window.addEventListener('load', () => {
-            const preloader = document.getElementById('page-preloader');
-            if (preloader) {
-                preloader.style.opacity = '0';
+            const splash = document.getElementById('splash-preloader');
+            const navBar = document.getElementById('nav-preloader');
+            
+            if (!sessionStorage.getItem('app_started')) {
+                if (splash && splash.style.display !== 'none') {
+                    setTimeout(() => {
+                        splash.style.opacity = '0';
+                        setTimeout(() => splash.style.display = 'none', 500);
+                        sessionStorage.setItem('app_started', 'true');
+                    }, 500);
+                }
+            }
+            if (navBar) {
+                navBar.style.opacity = '0';
             }
         });
 
@@ -273,9 +298,9 @@
                 // Do not show for hash links pointing to the same page
                 if (link.hash && link.pathname === window.location.pathname) return;
 
-                const preloader = document.getElementById('page-preloader');
-                if (preloader) {
-                    preloader.style.opacity = '1';
+                const navBar = document.getElementById('nav-preloader');
+                if (navBar) {
+                    navBar.style.opacity = '1';
                 }
             }
         });
@@ -283,9 +308,9 @@
         // Show preloader on form submission
         document.addEventListener('submit', (e) => {
             if (e.target && e.target.target !== '_blank') {
-                const preloader = document.getElementById('page-preloader');
-                if (preloader) {
-                    preloader.style.opacity = '1';
+                const navBar = document.getElementById('nav-preloader');
+                if (navBar) {
+                    navBar.style.opacity = '1';
                 }
             }
         });
