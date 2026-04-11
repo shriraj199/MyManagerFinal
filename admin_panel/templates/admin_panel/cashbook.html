@@ -23,77 +23,108 @@
     </div>
 
     <!-- Tab Contents -->
-    <div id="content-resident" class="overflow-x-auto">
-        <div class="bg-white rounded-[2rem] border border-bordercolor shadow-sm overflow-hidden">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-50/50">
-                        <th class="px-6 py-4 text-[10px] font-black text-muted uppercase tracking-widest border-b border-bordercolor">Date</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-muted uppercase tracking-widest border-b border-bordercolor">Flat No</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-muted uppercase tracking-widest border-b border-bordercolor">Resident Name</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-muted uppercase tracking-widest border-b border-bordercolor text-right">Amount</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-50">
-                    {% for record in resident_records %}
-                    <tr class="hover:bg-gray-50/50 transition-colors group">
-                        <td class="px-6 py-5 text-xs font-bold text-muted">{{ record.created_at|date:"d M, Y" }}</td>
-                        <td class="px-6 py-5">
-                            <span class="text-[10px] font-black text-primary bg-blue-50 py-1.5 px-3 rounded-full border border-blue-100">
-                                {{ record.user.unit_number|default:"-" }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-5">
-                            <p class="text-sm font-black text-textdark leading-none">{{ record.user.first_name|default:record.user.username }}</p>
-                        </td>
-                        <td class="px-6 py-5 text-right">
-                            <span class="text-sm font-black text-green-600">₹{{ record.extracted_amount|default:"0" }}</span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="px-6 py-12 text-center text-muted font-bold text-sm italic">No resident records found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div id="content-resident" class="space-y-4">
+        {% for record in resident_records %}
+        <div class="bg-white p-5 rounded-[1.5rem] border border-gray-100 shadow-sm relative overflow-hidden flex flex-col gap-2 group hover:shadow-md transition">
+            <div class="flex items-start justify-between gap-3 w-full">
+                <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0">
+                        <i data-lucide="arrow-down-left" class="w-6 h-6"></i>
+                    </div>
+                    <div class="min-w-0 pr-2">
+                        <h3 class="font-extrabold text-gray-900 text-base md:text-lg truncate leading-tight mb-0.5">{{ record.user.first_name|default:record.user.username }}</h3>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{{ record.created_at|date:"d M Y" }}</span>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end shrink-0 pl-2 pt-1">
+                    <span class="font-black text-emerald-500 text-lg md:text-xl tracking-tight">+₹{{ record.extracted_amount|default:"0" }}</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between gap-4 mt-2 pl-[3.75rem]">
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px] md:text-[10px] font-black text-primary bg-blue-50 py-1 px-2.5 rounded-full border border-blue-100 uppercase tracking-wider">
+                        Unit: {{ record.user.unit_number|default:"-" }}
+                    </span>
+                </div>
+                {% if record.proof_image %}
+                <button type="button" onclick="showReceipt('{{ record.proof_image.url }}')" class="w-9 h-9 rounded-[1rem] bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition border-none cursor-pointer">
+                    <i data-lucide="image" class="w-4 h-4"></i>
+                </button>
+                {% endif %}
+            </div>
         </div>
+        {% empty %}
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100 opacity-50">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
+                <i data-lucide="file-x-2" class="w-8 h-8 text-muted"></i>
+            </div>
+            <h3 class="text-lg font-bold text-textdark leading-none mb-2">No Resident Records</h3>
+            <p class="text-xs font-medium text-muted">No maintenance payments verified yet.</p>
+        </div>
+        {% endfor %}
     </div>
 
-    <div id="content-other" class="overflow-x-auto hidden">
-        <div class="bg-white rounded-[2rem] border border-bordercolor shadow-sm overflow-hidden text-white/0">
-             <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-50/50">
-                        <th class="px-6 py-4 text-[10px] font-black text-muted uppercase tracking-widest border-b border-bordercolor">Date</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-muted uppercase tracking-widest border-b border-bordercolor">Payee / Role</th>
-                        <th class="px-6 py-4 text-[10px] font-black text-muted uppercase tracking-widest border-b border-bordercolor text-right">Amount</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-50">
-                    {% for record in other_records %}
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-5 text-xs font-bold text-muted">{{ record.created_at|date:"d M, Y" }}</td>
-                        <td class="px-6 py-5">
-                            <p class="text-sm font-black text-textdark leading-none mb-1">{{ record.payee_name }}</p>
-                            <p class="text-[10px] font-bold text-muted uppercase tracking-widest leading-none">{{ record.description|truncatechars:20 }}</p>
-                        </td>
-                        <td class="px-6 py-5 text-right">
-                            <span class="text-sm font-black text-rose-500">-₹{{ record.amount }}</span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="px-6 py-12 text-center text-muted font-bold text-sm italic">No expenditures found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div id="content-other" class="space-y-4 hidden">
+        {% for record in other_records %}
+        <div class="bg-white p-5 rounded-[1.5rem] border border-gray-100 shadow-sm relative overflow-hidden flex flex-col gap-2 group hover:shadow-md transition">
+            <div class="flex items-start justify-between gap-3 w-full">
+                <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                    <div class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                        <i data-lucide="wallet" class="w-6 h-6"></i>
+                    </div>
+                    <div class="min-w-0 pr-2">
+                        <h3 class="font-extrabold text-gray-900 text-base md:text-lg truncate leading-tight mb-0.5">{{ record.payee_name }}</h3>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{{ record.created_at|date:"d M Y" }}</span>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end shrink-0 pl-2 pt-1">
+                    <span class="font-black text-rose-500 text-lg md:text-xl tracking-tight">-₹{{ record.amount }}</span>
+                </div>
+            </div>
+            
+            <div class="flex items-end justify-between gap-4 mt-2 pl-[3.75rem]">
+                <p class="text-[11px] md:text-xs font-medium text-gray-500 leading-relaxed flex-1 break-words">
+                    {{ record.description|default:"No description provided." }}
+                </p>
+                <div class="flex items-center gap-2 shrink-0">
+                    {% if record.receipt %}
+                    <button type="button" onclick="showReceipt('{{ record.receipt.url }}')" class="w-9 h-9 rounded-[1rem] bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition border-none cursor-pointer">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
         </div>
+        {% empty %}
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100 opacity-50">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
+                <i data-lucide="receipt" class="w-8 h-8 text-muted"></i>
+            </div>
+            <h3 class="text-lg font-bold text-textdark leading-none mb-2">No Expenditures</h3>
+            <p class="text-xs font-medium text-muted">Your financial record is clean.</p>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
 <script>
+    function showReceipt(url) {
+        Swal.fire({
+            imageUrl: url,
+            imageAlt: 'Proof Preview',
+            showCloseButton: true,
+            showConfirmButton: false,
+            padding: '1rem',
+            background: '#ffffff',
+            customClass: {
+                popup: 'rounded-[2rem]',
+                image: 'rounded-xl max-h-[70vh] object-contain',
+                closeButton: 'focus:outline-none'
+            }
+        });
+    }
+
     function switchTab(tab) {
         const resBtn = document.getElementById('tab-resident');
         const othBtn = document.getElementById('tab-other');
