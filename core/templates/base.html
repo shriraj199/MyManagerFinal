@@ -236,24 +236,35 @@
     <script>
         lucide.createIcons();
 
-        // PWA "Nuclear Reset" - Force clear everything if stuck
-        if (window.location.search.includes('reset_pwa=true')) {
+        // AGGRESSIVE CLEANUP: Kill all existing service workers once automatically
+        if (!localStorage.getItem('sw_cleaned_v4')) {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    for(let registration of registrations) {
-                        registration.unregister();
+                    if (registrations.length > 0) {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                        if ('caches' in window) {
+                            caches.keys().then(function(names) {
+                                for (let name of names) caches.delete(name);
+                            });
+                        }
+                        localStorage.setItem('sw_cleaned_v4', 'true');
+                        console.log('Aggressive SW cleanup performed.');
+                        window.location.reload();
+                    } else {
+                        localStorage.setItem('sw_cleaned_v4', 'true');
                     }
-                    if ('caches' in window) {
-                        caches.keys().then(function(names) {
-                            for (let name of names) caches.delete(name);
-                        });
-                    }
-                    console.log('PWA Reset successful. Reloading...');
-                    const url = new URL(window.location);
-                    url.searchParams.delete('reset_pwa');
-                    window.location.href = url.href;
                 });
+            } else {
+                localStorage.setItem('sw_cleaned_v4', 'true');
             }
+        }
+
+        // PWA "Manual Reset" - Still available if needed
+        if (window.location.search.includes('reset_pwa=true')) {
+            localStorage.removeItem('sw_cleaned_v4');
+            window.location.reload();
         }
 
         /* 
