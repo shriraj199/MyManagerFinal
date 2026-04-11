@@ -176,8 +176,10 @@ def extract_ocr_details(image_file):
     api_key = os.environ.get('GEMINI_API_KEY')
     
     if not api_key:
-        print("CRITICAL: GEMINI_API_KEY missing from environment.")
-        return {}
+        print("❌ CRITICAL ERROR: GEMINI_API_KEY NOT FOUND IN ENV")
+        return {'error': 'API Key Missing'}
+
+    print(f"🔍 AI Scanning Image... (Size: {len(image_bytes)} bytes)")
 
     # Reset file pointer
     image_file.seek(0)
@@ -197,7 +199,19 @@ def extract_ocr_details(image_file):
             new_height = int(float(img.height) * ratio)
             img = img.resize((800, new_height), Image.Resampling.LANCZOS)
         
-        prompt = "OCR this UPI receipt. Return JSON only: {amount: float, date: DD/MM/YYYY, txn_id: string, acc_digits: last 4 digits}"
+        prompt = """
+        OCR this UPI receipt (PhonePe, GPay, or Paytm). 
+        Extract the following and return ONLY a JSON object:
+        {
+          "amount": number (the final transaction amount),
+          "date": "DD/MM/YYYY" (the payment date),
+          "txn_id": "string" (Transaction ID or UTR number),
+          "acc_digits": "string" (Last 4 digits of the credited account, e.g., '5200')
+        }
+        Precautions:
+        - If amount is '₹1', return 1.0.
+        - If Transaction ID is missing but UTR is present, use UTR as txn_id.
+        """
         
         # Permissive safety settings for PII receipts
         safety_settings = [
@@ -209,30 +223,28 @@ def extract_ocr_details(image_file):
         
         response = model.generate_content([prompt, img], safety_settings=safety_settings)
         
-        # Check if we got a valid response (not blocked by safety filters)
-        if not response.candidates:
-            print(f"DEBUG AI: No candidates returned.")
-            return {'error': 'No response from AI'}
-            
-        if not response.candidates[0].content.parts:
-            reason = response.candidates[0].finish_reason
-            print(f"DEBUG AI: Blocked response. Reason: {reason}")
-            return {'error': f'AI Blocked: {reason}'}
-
-        clean_resp = response.text.replace('```json', '').replace('```', '').strip()
+        print(f"🤖 AI Response Received. Finish Reason: {response.candidates[0].finish_reason if response.candidates else 'No Candidates'}")
         
-        # Locate JSON content within potential text
+        if not response.candidates or not response.candidates[0].content.parts:
+            return {'error': 'AI Blocked or Empty'}
+
+        raw_text = response.text
+        print(f"📄 Raw AI Text: {raw_text}")
+        
+        clean_resp = raw_text.replace('```json', '').replace('```', '').strip()
         match = re.search(r'\{.*\}', clean_resp, re.DOTALL)
         if match:
             data = json.loads(match.group(0))
+            print(f"✅ Extracted Data: {data}")
         else:
+            print("⚠️ Failed to parse JSON from AI response")
             data = {}
             
         return {
-            'amount': data.get('amount'),
+            'amount': str(data.get('amount', '0')).replace('₹', '').replace(',', '').strip(),
             'date': data.get('date'),
-            'txn_id': data.get('txn_id'),
-            'acc_digits': data.get('acc_digits')
+            'txn_id': data.get('txn_id') or data.get('utr'),
+            'acc_digits': str(data.get('acc_digits', '')).replace('X', '').strip()[-4:]
         }
     except Exception as e:
         print(f"Gemini API Error: {e}")
@@ -290,42 +302,50 @@ def maintenance_view(request):
 
     if request.method == 'POST' and request.FILES.get('proof_image'):
         proof_file = request.FILES.get('proof_image')
-        amount_raw = request.POST.get('amount')
-        date_str = request.POST.get('date')
-        txn_id = request.POST.get('txn_id')
-        acc_digits = request.POST.get('account_digits')
         
-        # 1. Unique Transaction ID Check
-        if PaymentProof.objects.filter(transaction_id=txn_id).exists() or RentPaymentProof.objects.filter(transaction_id=txn_id).exists():
-            messages.error(request, f"Failure: Transaction ID '{txn_id}' has already been used.")
-            return redirect('maintenance')
+        # --- NEW: Automated Image to Text Logic ---
+        # We now extract details synchronously during the upload request
+        details = extract_ocr_details(proof_file)
+        
+        amt_paid = Decimal(str(details.get('amount', '0.00')).replace(',', ''))
+        txn_id = details.get('txn_id')
+        acc_digits = details.get('acc_digits')
+        extracted_date = None
+        
+        if details.get('date'):
+            try:
+                extracted_date = datetime.strptime(details['date'], "%d/%m/%Y").date()
+            except:
+                try: extracted_date = datetime.strptime(details['date'], "%Y-%m-%d").date()
+                except: pass
 
+        # 1. Unique Transaction ID Check (If AI found one)
+        if txn_id:
+            duplicate = PaymentProof.objects.filter(transaction_id=txn_id).exists() or \
+                        RentPaymentProof.objects.filter(transaction_id=txn_id).exists()
+            if duplicate:
+                messages.error(request, f"Failure: Transaction ID '{txn_id}' has already been recorded.")
+                return redirect('maintenance')
+
+        # 2. Create the Proof object
         if is_rental:
-            proof = RentPaymentProof.objects.create(rental_user=request.user, owner=request.user.owner, proof_image=proof_file)
+            proof = RentPaymentProof.objects.create(
+                rental_user=request.user, owner=request.user.owner, proof_image=proof_file,
+                extracted_amount=amt_paid, transaction_id=txn_id, extracted_account_digits=acc_digits,
+                extracted_date=extracted_date
+            )
         else:
             eff_society = society_name or (request.user.owner.society_name if hasattr(request.user, 'owner') and request.user.owner else "Global")
-            proof = PaymentProof.objects.create(user=request.user, society_name=eff_society, proof_image=proof_file)
+            proof = PaymentProof.objects.create(
+                user=request.user, society_name=eff_society, proof_image=proof_file,
+                extracted_amount=amt_paid, transaction_id=txn_id, extracted_account_digits=acc_digits,
+                extracted_date=extracted_date
+            )
             
-        # Parse Amount
-        clean_amount = ''.join(c for c in str(amount_raw) if c.isdigit() or c == '.')
-        amt_paid = Decimal(clean_amount) if clean_amount else Decimal('0.00')
-        proof.extracted_amount = amt_paid
-        proof.transaction_id = txn_id
-        proof.extracted_account_digits = acc_digits
-        
-        # Parse Date
-        if date_str:
-            try:
-                proof.extracted_date = datetime.strptime(date_str, "%d/%m/%Y").date()
-            except:
-                try: proof.extracted_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                except: pass
-        
-        # Comparison Logic
+        # Comparison logic for Flagging
         is_flagged = False
         reasons = []
         
-        # 1. Account Number Check (from secretary/owner settings)
         expected_acc = None
         if is_rental:
             expected_acc = settings_obj.account_number[-4:] if settings_obj and settings_obj.account_number else None
@@ -334,21 +354,18 @@ def maintenance_view(request):
 
         if expected_acc and acc_digits and str(acc_digits) != str(expected_acc):
             is_flagged = True
-            reasons.append(f"Account Mismatch (Expected {expected_acc})")
+            reasons.append(f"Account mismatch ({acc_digits})")
             
-        # 2. Date Check
-        if proof.extracted_date and proof.extracted_date != date.today():
+        if extracted_date and extracted_date != date.today():
              is_flagged = True
-             reasons.append(f"Date Mismatch (Not Today)")
-        
-        # Note: Amount mismatch is NOT flagged, but only the actual amount paid is subtracted.
+             reasons.append(f"Date mismatch")
         
         if is_flagged:
             proof.status = 'flagged'
-            messages.warning(request, f"Warning: {', '.join(reasons)}. Payment recorded but marked for review.")
+            messages.warning(request, f"Proof uploaded but flagged for review: {', '.join(reasons)}.")
         else:
             proof.status = 'verified'
-            messages.success(request, f"Success! ₹{amt_paid} has been recorded and subtracted from your balance.")
+            messages.success(request, f"AI Scan successful! ₹{amt_paid} recorded and verified.")
             
         proof.save()
         return redirect('maintenance')

@@ -283,37 +283,23 @@
             </div>
 
             <div id="review-step" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div class="bg-gray-50 border border-gray-100 rounded-3xl overflow-hidden mb-4">
-                    <img id="preview" class="w-full max-h-48 object-contain bg-white">
+                <div class="bg-gray-50 border border-gray-100 rounded-3xl overflow-hidden mb-4 shadow-inner">
+                    <img id="preview" class="w-full max-h-64 object-contain bg-white">
                 </div>
 
-                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
-                    <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Amount Paid (₹)</label>
-                    <input type="number" name="amount" id="form-amount" step="0.01" required 
-                           class="w-full bg-transparent text-lg font-black text-textdark focus:outline-none" placeholder="0.00">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
-                        <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction Date</label>
-                        <input type="text" name="date" id="form-date" required 
-                               class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="DD/MM/YYYY">
+                <div class="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 flex items-center gap-4">
+                    <div class="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white shrink-0">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
                     </div>
-                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
-                        <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Acc. Digits</label>
-                        <input type="text" name="account_digits" id="form-acc" maxlength="4" required 
-                               class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="Last 4">
+                    <div>
+                        <p class="text-xs font-black text-textdark uppercase tracking-tight">AI Automatic Scan</p>
+                        <p class="text-[10px] text-muted font-medium">Details will be extracted automatically from your image.</p>
                     </div>
                 </div>
 
-                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-primary transition-all">
-                    <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Txn ID / UTR</label>
-                    <input type="text" name="txn_id" id="form-txn" required 
-                           class="w-full bg-transparent text-sm font-black text-textdark focus:outline-none" placeholder="UTR Number">
-                </div>
-
-                <button type="submit" class="w-full mt-2 bg-primary hover:bg-blue-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-primary/30 transition-all">
-                    Confirm & Upload Proof
+                <button type="submit" id="main-submit-btn" class="w-full mt-2 bg-primary hover:bg-blue-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-primary/30 transition-all flex items-center justify-center gap-2">
+                    <span id="btn-text">Confirm & Upload Proof</span>
+                    <i id="btn-icon" data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
                 
                 <button type="button" onclick="resetForm()" class="w-full text-[9px] text-muted font-bold uppercase tracking-widest py-2">
@@ -355,10 +341,9 @@
             }
             reader.readAsDataURL(input.files[0]);
             
-            // Switch to review step and scan
+            // Switch to review step
             document.getElementById('capture-step').classList.add('hidden');
             document.getElementById('review-step').classList.remove('hidden');
-            startOCRScan();
         }
     }
 
@@ -366,79 +351,17 @@
         document.getElementById('upload-form').reset();
         document.getElementById('review-step').classList.add('hidden');
         document.getElementById('capture-step').classList.remove('hidden');
-        document.getElementById('ai-status').classList.add('hidden');
     }
 
-    async function startOCRScan() {
-        const fileInput = document.getElementById('proof-image-input');
-        const aiStatus = document.getElementById('ai-status');
-        const amountInput = document.getElementById('form-amount');
-        const dateInput = document.getElementById('form-date');
-        const accInput = document.getElementById('form-acc');
-        const txnInput = document.getElementById('form-txn');
-
-        if (!fileInput.files[0]) return;
-
-        console.log("Starting OCR Scan for:", fileInput.files[0].name);
-        aiStatus.classList.remove('hidden');
-        aiStatus.classList.add('flex');
-        aiStatus.querySelector('p').innerText = "Scanning Image...";
-
-        const formData = new FormData();
-        formData.append('proof_image', fileInput.files[0]);
-        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-        try {
-            console.log("Fetching OCR from server...");
-            const response = await fetch("{% url 'process_ocr_preview' %}", {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            });
-            console.log("Server response status:", response.status);
-            const data = await response.json();
-            console.log("AI Response Data:", data);
-            
-            if (data.success) {
-                if (data.amount) {
-                    const cleanAmount = String(data.amount).replace(/[^\d.]/g, '');
-                    amountInput.value = cleanAmount;
-                }
-                if (data.date) dateInput.value = data.date;
-                if (data.acc_digits) accInput.value = data.acc_digits;
-                if (data.txn_id) txnInput.value = data.txn_id;
-
-                // Visual feedback
-                [amountInput, dateInput, accInput, txnInput].forEach(el => {
-                    if (el.value) {
-                        el.parentElement.classList.add('ring-2', 'ring-green-400', 'animate-pulse');
-                        setTimeout(() => el.parentElement.classList.remove('ring-2', 'ring-green-400', 'animate-pulse'), 2000);
-                    }
-                });
-            } else if (data.error) {
-                console.error("AI Scan Error:", data.error);
-                // Status hint
-                aiStatus.innerHTML = '<p class="text-[9px] text-red-500 font-black uppercase tracking-widest">Scan failed. Fill manually.</p>';
-            }
-        } catch (error) {
-            console.error("AI Error:", error);
-            aiStatus.innerHTML = '<p class="text-[9px] text-red-500 font-black uppercase tracking-widest">Connection error.</p>';
-        } finally {
-            // Wait a moment so the user sees the final status
-            setTimeout(() => {
-                aiStatus.classList.add('hidden');
-                aiStatus.classList.remove('flex');
-                // Reset text for next time
-                aiStatus.innerHTML = `
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                    </span>
-                    <p class="text-[9px] text-primary font-black uppercase tracking-widest">Scanning...</p>
-                `;
-            }, 3000);
-        }
-    }
+    // Handle form submit visual state
+    document.getElementById('upload-form').onsubmit = function() {
+        const btn = document.getElementById('main-submit-btn');
+        const text = document.getElementById('btn-text');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        text.innerText = "Uploading & Scanning...";
+        document.getElementById('top-loader').classList.remove('hidden');
+    };
 
 </script>
 {% endblock %}
