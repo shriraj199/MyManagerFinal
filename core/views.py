@@ -185,32 +185,49 @@ def extract_ocr_details(image_file):
     image_file.seek(0)
     
     try:
+        from google.generativeai.types import HarmCategory, HarmBlockThreshold
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # Prepare image part
+        # Prepare image and resize if needed to speed up / avoid limits
         img = Image.open(BytesIO(image_bytes))
+        if img.width > 1200:
+            ratio = 1200 / float(img.width)
+            new_height = int(float(img.height) * ratio)
+            img = img.resize((1200, new_height), Image.Resampling.LANCZOS)
         
         prompt = """
-        Analyze this payment proof (likely a UPI screenshot from GPay, PhonePe, or Paytm). 
-        Find the transaction details.
+        ACT AS AN OCR SPECIALIST. Analyze this Indian UPI payment receipt (GPay, PhonePe, Paytm).
+        Locate:
+        1. Total Amount Paid / Paid to.
+        2. Date of transaction.
+        3. Transaction ID / UTR / UPI Ref No.
         
-        Return ONLY valid JSON:
+        Return EXACTLY this JSON format and nothing else:
         {
-          "amount": float, 
-          "date": "DD/MM/YYYY", 
+          "amount": float,
+          "date": "DD/MM/YYYY",
           "txn_id": "string"
         }
         
-        Rules:
-        1. amount: The transaction value (e.g., 2000.00). No commas, no ₹.
-        2. date: The payment date in DD/MM/YYYY format.
-        3. txn_id: The UPI Ref No, UTR, or Transaction ID.
-        4. If a value is not found, use null.
-        5. Return ONLY the JSON object. No explanation, no backticks.
+        If not found, use null. Be very precise.
         """
         
-        response = model.generate_content([prompt, img])
+        # Using more permissive safety settings as receipts often contain sensitive-looking text
+        safety_settings = {
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        }
+        
+        response = model.generate_content([prompt, img], safety_settings=safety_settings)
+        
+        # Check if we got a valid response (not blocked by safety filters)
+        if not response.candidates or not response.candidates[0].content.parts:
+            print(f"DEBUG AI: Blocked or Empty response. Finish Reason: {response.candidates[0].finish_reason if response.candidates else 'No candidate'}")
+            return {}
+
         clean_resp = response.text.replace('```json', '').replace('```', '').strip()
         
         print(f"DEBUG AI Response: {clean_resp}")
