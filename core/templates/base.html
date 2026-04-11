@@ -33,12 +33,11 @@
 <body class="bg-gray-50 text-textdark antialiased font-sans flex min-h-screen">
     <!-- Splash Screen (App Start) -->
     <div id="splash-preloader"
-        style="position: fixed; top: 20%; left: 0; width: 100vw; height: 100vh; background-color: white; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease;">
-        <div class="relative w-20 h-20">
-            <div class="absolute inset-0 rounded-full border-4 border-blue-50"></div>
-            <div class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-            <img src="{% static 'core/pwa/logo.png' %}" class="absolute inset-0 w-20 h-20 m-auto rounded-xl shadow-md"
-                alt="Logo">
+        style="position: fixed; inset: 0; width: 100vw; height: 100vh; background-color: white; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease;">
+        <div class="relative w-28 h-28 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border-[5px] border-blue-50"></div>
+            <div class="absolute inset-0 rounded-full border-[5px] border-primary border-t-transparent animate-spin"></div>
+            <img src="{% static 'core/pwa/logo.png' %}" class="w-16 h-16 rounded-xl shadow-md object-contain z-10" alt="Logo">
         </div>
         <p class="mt-6 text-sm font-bold text-primary tracking-widest uppercase animate-pulse">TheManager</p>
     </div>
