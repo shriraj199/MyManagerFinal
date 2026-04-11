@@ -416,20 +416,43 @@
     <!-- Global Messages Popup -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     {% if messages %}
+    <div id="django-messages" class="hidden" style="display:none;">
+        {% for message in messages %}
+            <span data-tags="{{ message.tags }}" data-text="{{ message|escapejs }}"></span>
+        {% endfor %}
+    </div>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            {% for message in messages %}
+            const messages = document.querySelectorAll('#django-messages [data-text]');
+            messages.forEach(msg => {
+                const tags = msg.getAttribute('data-tags');
+                const text = msg.getAttribute('data-text');
+                
+                let icon = 'success';
+                let title = 'Success!';
+                
+                if (tags.includes('error')) {
+                    icon = 'error';
+                    title = 'Error!';
+                } else if (tags.includes('warning')) {
+                    icon = 'warning';
+                    title = 'Warning';
+                } else if (tags.includes('info')) {
+                    icon = 'info';
+                    title = 'Notice';
+                }
+
                 Swal.fire({
-                    icon: '{% if message.tags == "error" %}error{% elif message.tags == "warning" %}warning{% elif message.tags == "info" %}info{% else %}success{% endif %}',
-                    title: '{% if message.tags == "error" %}Error!{% elif message.tags == "warning" %}Warning{% elif message.tags == "info" %}Notice{% else %}Success!{% endif %}',
-                    text: '{{ message|escapejs }}',
+                    icon: icon,
+                    title: title,
+                    text: text,
                     confirmButtonColor: '#2563EB',
                     customClass: {
-                        popup: 'rounded-3xl',
+                        popup: 'rounded-[2rem]',
                         confirmButton: 'rounded-xl px-6 py-3 text-sm font-black tracking-widest shadow-lg shadow-blue-500/20'
                     }
                 });
-            {% endfor %}
+            });
         });
     </script>
     {% endif %}
