@@ -31,14 +31,10 @@
 </head>
 
 <body class="bg-gray-50 text-textdark antialiased font-sans flex min-h-screen">
-    <!-- Preloader -->
-    <div id="page-preloader" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center transition-opacity duration-300">
-        <div class="relative w-14 h-14">
-            <div class="absolute inset-0 rounded-full border-4 border-blue-100"></div>
-            <div class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-            <img src="{% static 'core/pwa/logo.png' %}" class="absolute inset-0 w-6 h-6 m-auto rounded-md shadow-sm" alt="">
-        </div>
-        <p class="mt-4 text-xs font-bold text-primary tracking-widest uppercase animate-pulse">Loading...</p>
+    <!-- Top Progress Bar Preloader -->
+    <div id="page-preloader"
+        class="fixed top-0 left-0 w-full h-1 z-[10000] overflow-hidden opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="h-full bg-primary animate-loading-bar rounded-r-full shadow-[0_0_10px_rgba(37,99,235,1)]"></div>
     </div>
 
     {% if user.is_authenticated %}
@@ -136,7 +132,8 @@
                 class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.path == maintenance_url %}bg-blue-50 text-primary font-bold shadow-sm shadow-blue-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">
                 <i data-lucide="banknote" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
                 <span class="text-sm tracking-wide">
-                    {% if user.role == 'resident' and user.resident_role == 'rental' %}Rent{% else %}Maintenance{% endif %}
+                    {% if user.role == 'resident' and user.resident_role == 'rental' %}Rent{% else %}Maintenance{% endif
+                    %}
                 </span>
             </a>
             {% endif %}
@@ -241,6 +238,21 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #D1D5DB;
         }
+
+        @keyframes loadingBar {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(300%);
+            }
+        }
+
+        .animate-loading-bar {
+            width: 40%;
+            animation: loadingBar 1s infinite linear;
+        }
     </style>
 
     <script>
@@ -249,39 +261,34 @@
             const preloader = document.getElementById('page-preloader');
             if (preloader) {
                 preloader.style.opacity = '0';
-                setTimeout(() => {
-                    preloader.style.display = 'none';
-                }, 300);
             }
         });
 
         // Show preloader on internal navigation
         document.addEventListener('click', (e) => {
             const link = e.target.closest('a');
-            if (link && !link.hasAttribute('download') && link.target !== '_blank' && 
-                link.href && !link.href.startsWith('javascript:') && !link.href.startsWith('mailto:') && 
+            if (link && !link.hasAttribute('download') && link.target !== '_blank' &&
+                link.href && !link.href.startsWith('javascript:') && !link.href.startsWith('mailto:') &&
                 !link.href.startsWith('tel:') && link.origin === window.location.origin) {
-                
+
                 // Do not show for hash links pointing to the same page
                 if (link.hash && link.pathname === window.location.pathname) return;
 
                 const preloader = document.getElementById('page-preloader');
                 if (preloader) {
-                    preloader.style.display = 'flex';
-                    requestAnimationFrame(() => preloader.style.opacity = '1');
+                    preloader.style.opacity = '1';
                 }
             }
         });
 
         // Show preloader on form submission
         document.addEventListener('submit', (e) => {
-           if(e.target && e.target.target !== '_blank') {
+            if (e.target && e.target.target !== '_blank') {
                 const preloader = document.getElementById('page-preloader');
                 if (preloader) {
-                    preloader.style.display = 'flex';
-                    requestAnimationFrame(() => preloader.style.opacity = '1');
+                    preloader.style.opacity = '1';
                 }
-           }
+            }
         });
 
         lucide.createIcons();
@@ -289,13 +296,13 @@
         // AGGRESSIVE CLEANUP: Kill all existing service workers once automatically
         if (!localStorage.getItem('sw_cleaned_v4')) {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     if (registrations.length > 0) {
-                        for(let registration of registrations) {
+                        for (let registration of registrations) {
                             registration.unregister();
                         }
                         if ('caches' in window) {
-                            caches.keys().then(function(names) {
+                            caches.keys().then(function (names) {
                                 for (let name of names) caches.delete(name);
                             });
                         }
