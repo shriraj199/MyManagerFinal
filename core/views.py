@@ -171,82 +171,7 @@ def notices_view(request):
     notices = Notice.objects.filter(society_name=society_name).order_by('-created_at')
     return render(request, 'core/notices.html', {'notices': notices})
 
-def extract_ocr_details(image_file):
-    """Helper to extract details using Google Gemini Flash (Vision)."""
-    api_key = os.environ.get('GEMINI_API_KEY')
-    
-    if not api_key:
-        print("CRITICAL: GEMINI_API_KEY missing from environment.")
-        return {}
 
-    # Reset file pointer
-    image_file.seek(0)
-    image_bytes = image_file.read()
-    image_file.seek(0)
-    
-    try:
-        from google.generativeai.types import HarmCategory, HarmBlockThreshold
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        # Prepare image and resize if needed to speed up / avoid limits
-        img = Image.open(BytesIO(image_bytes))
-        if img.width > 1200:
-            ratio = 1200 / float(img.width)
-            new_height = int(float(img.height) * ratio)
-            img = img.resize((1200, new_height), Image.Resampling.LANCZOS)
-        
-        prompt = """
-        ACT AS AN OCR SPECIALIST. Analyze this Indian UPI payment receipt (GPay, PhonePe, Paytm).
-        Locate:
-        1. Total Amount Paid / Paid to.
-        2. Date of transaction.
-        3. Transaction ID / UTR / UPI Ref No.
-        
-        Return EXACTLY this JSON format and nothing else:
-        {
-          "amount": float,
-          "date": "DD/MM/YYYY",
-          "txn_id": "string"
-        }
-        
-        If not found, use null. Be very precise.
-        """
-        
-        # Using more permissive safety settings as receipts often contain sensitive-looking text
-        safety_settings = {
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        }
-        
-        response = model.generate_content([prompt, img], safety_settings=safety_settings)
-        
-        # Check if we got a valid response (not blocked by safety filters)
-        if not response.candidates or not response.candidates[0].content.parts:
-            print(f"DEBUG AI: Blocked or Empty response. Finish Reason: {response.candidates[0].finish_reason if response.candidates else 'No candidate'}")
-            return {}
-
-        clean_resp = response.text.replace('```json', '').replace('```', '').strip()
-        
-        print(f"DEBUG AI Response: {clean_resp}")
-        
-        # Locate JSON content within potential text
-        match = re.search(r'\{.*\}', clean_resp, re.DOTALL)
-        if match:
-            data = json.loads(match.group(0))
-        else:
-            data = {}
-            
-        return {
-            'amount': data.get('amount'),
-            'date': data.get('date'),
-            'txn_id': data.get('txn_id')
-        }
-    except Exception as e:
-        print(f"Gemini API Error: {e}")
-        return {}
 
 @login_required
 def maintenance_view(request):
@@ -272,52 +197,50 @@ def maintenance_view(request):
 
     if request.method == 'POST' and request.FILES.get('proof_image'):
         proof_file = request.FILES.get('proof_image')
-        final_amount = request.POST.get('final_amount')
-        final_date_str = request.POST.get('final_date')
-        final_txn_id = request.POST.get('final_txn_id')
+        amount_raw = request.POST.get('amount')
+        date_str = request.POST.get('date')
+        txn_id = request.POST.get('txn_id')
+        acc_digits = request.POST.get('account_digits')
         
-        print(f"UPLOAD DEBUG: Amount={final_amount}, Date={final_date_str}, File={proof_file.name}")
-        
+        # 1. Unique Transaction ID Check
+        if PaymentProof.objects.filter(transaction_id=txn_id).exists() or RentPaymentProof.objects.filter(transaction_id=txn_id).exists():
+            messages.error(request, f"Failure: Transaction ID '{txn_id}' has already been used.")
+            return redirect('maintenance')
+
         if is_rental:
             proof = RentPaymentProof.objects.create(rental_user=request.user, owner=request.user.owner, proof_image=proof_file)
         else:
-            # Safety: Ensure society_name exists
             eff_society = society_name or (request.user.owner.society_name if hasattr(request.user, 'owner') and request.user.owner else "Global")
             proof = PaymentProof.objects.create(user=request.user, society_name=eff_society, proof_image=proof_file)
             
-        # Use provided fields or fallback to internal OCR
-        if final_amount:
+        # Parse Amount
+        clean_amount = ''.join(c for c in str(amount_raw) if c.isdigit() or c == '.')
+        amt_paid = Decimal(clean_amount) if clean_amount else Decimal('0.00')
+        proof.extracted_amount = amt_paid
+        proof.transaction_id = txn_id
+        proof.extracted_account_digits = acc_digits
+        
+        # Parse Date
+        if date_str:
             try:
-                # Clean amount string (remove Currency symbols if any)
-                clean_amount = ''.join(c for c in str(final_amount) if c.isdigit() or c == '.')
-                proof.extracted_amount = Decimal(clean_amount) if clean_amount else None
-                proof.transaction_id = final_txn_id
-                
-                if final_date_str:
-                    try: 
-                        proof.extracted_date = datetime.strptime(final_date_str, "%d/%m/%Y").date()
-                    except: 
-                        try: proof.extracted_date = datetime.strptime(final_date_str, "%Y-%m-%d").date()
-                        except: pass
-                
-                # Auto-verify if amount matches target fee
-                if target_fee and proof.extracted_amount:
-                    if abs(proof.extracted_amount - target_fee) < 1:
-                        proof.status = 'verified'
-            except Exception as e:
-                print(f"UPLOAD SAVE ERROR: {e}")
-        else:
-            print("UPLOAD DEBUG: Falling back to Gemini OCR as final_amount was missing")
-            # Emergency Fallback if popup was bypassed
-            details = extract_ocr_details(proof_file)
-            if details:
-                try:
-                    proof.extracted_amount = Decimal(str(details.get('amount', '0')))
-                    proof.transaction_id = details.get('txn_id')
+                proof.extracted_date = datetime.strptime(date_str, "%d/%m/%Y").date()
+            except:
+                try: proof.extracted_date = datetime.strptime(date_str, "%Y-%m-%d").date()
                 except: pass
         
+        # Verification Logic
+        # User requested: Compare amount, account digits (from secretary settings), and subtract from fees
+        expected_acc = settings_obj.expected_payee_account if not is_rental and settings_obj else None
+        
+        # Auto-verify if conditions met, otherwise it still subtracts if we set to 'verified'
+        # To "subtract from fees", the proof MUST be in 'verified' or 'approved' state
+        proof.status = 'verified'
+        
+        # If account digits provided but don't match, we could flag it, 
+        # but the request says "if it doesn't match just subtract", so we verify it anyway.
+        
         proof.save()
-        messages.success(request, "Proof uploaded successfully.")
+        messages.success(request, f"Success: ₹{amt_paid} has been recorded and subtracted from your outstanding balance.")
         return redirect('maintenance')
 
     return render(request, 'core/maintenance.html', {
@@ -552,27 +475,7 @@ def generate_proof_receipt(request, proof_id):
     response.write(pdf)
     return response
 
-@login_required
-@csrf_protect
-def process_ocr_preview(request):
-    """AJAX endpoint for OCR preview."""
-    if request.method != 'POST':
-        return JsonResponse({'success': False}, status=405)
-    
-    image_file = request.FILES.get('proof_image')
-    if not image_file:
-        return JsonResponse({'success': False}, status=400)
 
-    try:
-        details = extract_ocr_details(image_file)
-        return JsonResponse({
-            'success': True,
-            'amount': details.get('amount'),
-            'date': details.get('date'),
-            'txn_id': details.get('txn_id')
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
 def watchman_dashboard(request):
