@@ -132,7 +132,7 @@
                 class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.path == maintenance_url %}bg-blue-50 text-primary font-bold shadow-sm shadow-blue-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">
                 <i data-lucide="banknote" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
                 <span class="text-sm tracking-wide">
-                    {% if user.role == 'resident' and user.resident_role == 'rental' %}Rent{% else %}Maintenance{% endif %}
+                    {% if user.role == 'resident' and user.resident_role == 'rental' %}Rent{% else %}Maintenance
                 </span>
             </a>
             {% endif %}
