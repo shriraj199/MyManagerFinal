@@ -12,5 +12,8 @@
   "type": "commonjs",
   "devDependencies": {
     "@capacitor/android": "^8.2.0"
+  },
+  "dependencies": {
+    "@capacitor/ios": "^8.3.0"
   }
 }
