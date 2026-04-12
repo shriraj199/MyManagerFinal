@@ -90,6 +90,15 @@
                 <span class="text-sm tracking-wide">Dashboard</span>
             </a>
 
+            {% if user.role == 'company' %}
+            {% url 'societies_list' as societies_url %}
+            <a href="{{ societies_url }}"
+                class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.path == societies_url %}bg-blue-50 text-indigo-600 font-bold shadow-sm shadow-blue-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">
+                <i data-lucide="building" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                <span class="text-sm tracking-wide">Societies List</span>
+            </a>
+            {% endif %}
+
             {% if user.role == 'resident' and user.role != 'watchman' %}
             {% url 'resident_bills' as bills_url %}
             <a href="{{ bills_url }}"

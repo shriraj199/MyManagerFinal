@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex flex-col flex-1 max-w-lg mx-auto w-full p-6 pb-24">
+    <!-- Header -->
+    <div class="flex items-center mb-8 gap-4">
+        <a href="{% url 'company_dashboard' %}" class="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex flex-shrink-0 items-center justify-center shadow-sm hover:bg-gray-50 transition active:scale-90">
+            <i data-lucide="arrow-left" class="w-6 h-6 text-textdark"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-extrabold text-textdark tracking-tight leading-none mb-1">Managed Societies</h1>
+            <p class="text-[10px] font-black text-muted uppercase tracking-widest">Company Dashboard &bull; Society Directory</p>
+        </div>
+    </div>
+
+    <!-- Societies Matrix -->
+    <div class="grid grid-cols-1 gap-4">
+        {% for society in societies %}
+        <a href="{% url 'society_detail' society.name %}" class="bg-white p-6 rounded-[2.5rem] border border-bordercolor shadow-sm flex items-center justify-between group active:scale-[0.98] transition hover:border-primary/20 hover:shadow-md">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-gray-50 text-muted rounded-2xl flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                    <i data-lucide="building-2" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-textdark text-lg leading-none mb-1.5">{{ society.name }}</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 bg-blue-50 text-primary text-[9px] font-black uppercase rounded-lg border border-blue-100">
+                            {{ society.resident_count }} Members
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <i data-lucide="chevron-right" class="w-5 h-5 text-muted group-hover:text-primary transition-colors"></i>
+            </div>
+        </a>
+        {% empty %}
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100 opacity-50">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
+                <i data-lucide="building" class="w-8 h-8 text-muted"></i>
+            </div>
+            <h3 class="text-lg font-bold text-textdark leading-none mb-2">No Societies</h3>
+            <p class="text-xs font-medium text-muted">Generate an invite code to start managing societies.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -84,3 +84,45 @@ def delete_secretary(request, secretary_id):
     
     messages.success(request, f"Successfully deleted Secretary {sec.username} for society {society_name}.")
     return redirect('company_dashboard')
+
+@login_required
+def societies_list(request):
+    if request.user.role != 'company':
+        return redirect('resident_dashboard')
+    
+    society_names = InviteCode.objects.filter(company=request.user).values_list('society_name', flat=True).distinct()
+    
+    societies = []
+    for name in society_names:
+        resident_count = User.objects.filter(society_name=name, role='resident').count()
+        societies.append({
+            'name': name,
+            'resident_count': resident_count
+        })
+        
+    return render(request, 'company_panel/societies.html', {'societies': societies})
+
+@login_required
+def society_detail(request, society_name):
+    if request.user.role != 'company':
+        return redirect('resident_dashboard')
+    
+    # Get all owners in this society
+    owners = User.objects.filter(society_name=society_name, role='resident', resident_role='owner').order_by('unit_number')
+    
+    # Check each owner for rentals
+    members = []
+    for owner in owners:
+        is_rented = owner.rentals.exists()
+        members.append({
+            'owner': owner,
+            'is_rented': is_rented
+        })
+    
+    flat_count = owners.count()
+    
+    return render(request, 'company_panel/society_detail.html', {
+        'society_name': society_name,
+        'members': members,
+        'flat_count': flat_count
+    })

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex flex-col flex-1 max-w-lg mx-auto w-full p-6 pb-24">
+    <!-- Header -->
+    <div class="flex items-center mb-8 gap-4">
+        <a href="{% url 'societies_list' %}" class="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex flex-shrink-0 items-center justify-center shadow-sm hover:bg-gray-50 transition active:scale-90">
+            <i data-lucide="arrow-left" class="w-6 h-6 text-textdark"></i>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-2xl font-extrabold text-textdark tracking-tight leading-none mb-1">{{ society_name }}</h1>
+            <p class="text-[10px] font-black text-muted uppercase tracking-widest">Active Directory &bull; Member List</p>
+        </div>
+        <div class="bg-indigo-50 border border-indigo-100 px-4 py-2.5 rounded-2xl text-center">
+            <p class="text-[8px] font-black text-indigo-600 uppercase tracking-widest leading-tight">Total Flats</p>
+            <p class="text-lg font-black text-indigo-700 leading-none">{{ flat_count }}</p>
+        </div>
+    </div>
+
+    <!-- Member Directory -->
+    <div class="space-y-3">
+        {% for item in members %}
+        <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between group transition hover:shadow-md">
+            <div class="flex items-center gap-4 min-w-0">
+                <div class="w-12 h-12 rounded-2xl {% if item.is_rented %}bg-amber-50 text-amber-600{% else %}bg-emerald-50 text-emerald-600{% endif %} flex items-center justify-center shrink-0">
+                    <i data-lucide="{% if item.is_rented %}key-round{% else %}user{% endif %}" class="w-6 h-6"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="font-bold text-textdark text-base truncate leading-tight">{{ item.owner.first_name|default:item.owner.username }}</h3>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-[9px] font-black text-muted uppercase tracking-widest">Unit {{ item.owner.unit_number }}</span>
+                        {% if item.is_rented %}
+                        <span class="w-1 h-1 bg-gray-200 rounded-full"></span>
+                        <span class="text-[9px] font-black text-amber-600 uppercase tracking-widest italic">Rented</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="tel:{{ item.owner.mobile_number }}" class="w-10 h-10 rounded-xl bg-gray-50 text-muted hover:bg-emerald-50 hover:text-emerald-600 flex items-center justify-center transition shadow-sm">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100 opacity-50">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
+                <i data-lucide="users-2" class="w-8 h-8 text-muted"></i>
+            </div>
+            <h3 class="text-lg font-bold text-textdark leading-none mb-2">No Members</h3>
+            <p class="text-xs font-medium text-muted">No owners have registered for this society yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
