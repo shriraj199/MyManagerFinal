@@ -287,13 +287,30 @@
                     <img id="preview" class="w-full max-h-64 object-contain bg-white">
                 </div>
 
+                <div id="ai-results" class="hidden space-y-3 animate-in fade-in slide-in-from-top-2">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white border border-gray-100 p-3 rounded-2xl shadow-sm">
+                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Extracted Amount</p>
+                            <p id="res-amount" class="text-xs font-black text-primary">Scanning...</p>
+                        </div>
+                        <div class="bg-white border border-gray-100 p-3 rounded-2xl shadow-sm">
+                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Payment Date</p>
+                            <p id="res-date" class="text-xs font-black text-textdark">Scanning...</p>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-gray-100 p-3 rounded-2xl shadow-sm">
+                        <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Transaction ID / UTR</p>
+                        <p id="res-txn" class="text-xs font-black text-textdark font-mono truncate">Scanning...</p>
+                    </div>
+                </div>
+
                 <div class="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 flex items-center gap-4">
-                    <div class="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white shrink-0">
+                    <div id="ai-icon-container" class="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white shrink-0">
                         <i data-lucide="sparkles" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <p class="text-xs font-black text-textdark uppercase tracking-tight">AI Automatic Scan</p>
-                        <p class="text-[10px] text-muted font-medium">Details will be extracted automatically from your image.</p>
+                        <p id="ai-status-text" class="text-xs font-black text-textdark uppercase tracking-tight">AI Automatic Scan</p>
+                        <p id="ai-sub-text" class="text-[10px] text-muted font-medium">Details will be extracted automatically from your image.</p>
                     </div>
                 </div>
 
@@ -310,18 +327,6 @@
     </div>
 </div>
 
-
-
-    <!-- Full Image View Modal -->
-<div id="image-modal" class="fixed inset-0 z-[120] hidden items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onclick="this.classList.add('hidden')">
-    <div class="relative max-w-4xl w-full h-full flex items-center justify-center">
-        <img id="modal-img" src="" class="max-w-full max-h-full object-contain rounded-2xl shadow-2xl">
-        <button class="absolute top-4 right-4 text-white p-2">
-            <i data-lucide="x" class="w-8 h-8"></i>
-        </button>
-    </div>
-</div>
-
 <script>
     function openImageModal(url) {
         document.getElementById('modal-img').src = url;
@@ -333,17 +338,97 @@
         document.getElementById('image-modal').classList.add('hidden');
     }
 
-    function previewImage(input) {
+    async function previewImage(input) {
         if (input.files && input.files[0]) {
+            const file = input.files[0];
             const reader = new FileReader();
             reader.onload = function (e) {
                 document.getElementById('preview').src = e.target.result;
             }
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(file);
             
             // Switch to review step
             document.getElementById('capture-step').classList.add('hidden');
             document.getElementById('review-step').classList.remove('hidden');
+
+            // Start AI Scan
+            await startAIScan(file);
+        }
+    }
+
+    // Full Image View Modal
+    const imageModal = document.createElement('div');
+    imageModal.id = 'image-modal';
+    imageModal.className = 'fixed inset-0 z-[120] hidden items-center justify-center p-4 bg-black/90 backdrop-blur-sm';
+    imageModal.onclick = () => imageModal.classList.add('hidden');
+    imageModal.innerHTML = `
+        <div class="relative max-w-4xl w-full h-full flex items-center justify-center">
+            <img id="modal-img" src="" class="max-w-full max-h-full object-contain rounded-2xl shadow-2xl">
+            <button class="absolute top-4 right-4 text-white p-2">
+                <i data-lucide="x" class="w-8 h-8"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(imageModal);
+
+    function openImageModal(url) {
+        document.getElementById('modal-img').src = url;
+        document.getElementById('image-modal').classList.remove('hidden');
+    }
+
+    async function startAIScan(file) {
+        const aiStatus = document.getElementById('ai-status');
+        const aiResults = document.getElementById('ai-results');
+        const statusText = document.getElementById('ai-status-text');
+        const subText = document.getElementById('ai-sub-text');
+        const iconContainer = document.getElementById('ai-icon-container');
+        
+        aiStatus.classList.remove('hidden');
+        aiResults.classList.remove('hidden');
+        statusText.innerText = "Scanning Image...";
+        iconContainer.classList.add('animate-pulse');
+
+        const formData = new FormData();
+        formData.append('proof_image', file);
+
+        try {
+            const response = await fetch('{% url "process_ocr_preview" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('res-amount').innerText = "₹" + (data.amount || "0.00");
+                document.getElementById('res-date').innerText = data.date || "Not found";
+                document.getElementById('res-txn').innerText = data.txn_id || "Not found";
+                
+                statusText.innerText = "Scan Complete";
+                subText.innerText = "AI successfully extracted the details above.";
+                iconContainer.classList.remove('bg-primary', 'animate-pulse');
+                iconContainer.classList.add('bg-green-600');
+                iconContainer.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i>';
+                lucide.createIcons();
+            } else {
+                throw new Error(data.error || "Scan failed");
+            }
+        } catch (error) {
+            console.error(error);
+            statusText.innerText = "Scan Failed";
+            subText.innerText = "AI couldn't read the image. You can still upload manually.";
+            iconContainer.classList.remove('bg-primary', 'animate-pulse');
+            iconContainer.classList.add('bg-rose-500');
+            iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-5 h-5"></i>';
+            
+            document.getElementById('res-amount').innerText = "—";
+            document.getElementById('res-date').innerText = "—";
+            document.getElementById('res-txn').innerText = "—";
+            lucide.createIcons();
+        } finally {
+            aiStatus.classList.add('hidden');
         }
     }
 
@@ -351,7 +436,58 @@
         document.getElementById('upload-form').reset();
         document.getElementById('review-step').classList.add('hidden');
         document.getElementById('capture-step').classList.remove('hidden');
+        document.getElementById('ai-results').classList.add('hidden');
+        
+        // Reset AI UI
+        const statusText = document.getElementById('ai-status-text');
+        const subText = document.getElementById('ai-sub-text');
+        const iconContainer = document.getElementById('ai-icon-container');
+        statusText.innerText = "AI Automatic Scan";
+        subText.innerText = "Details will be extracted automatically from your image.";
+        iconContainer.className = "w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white shrink-0";
+        iconContainer.innerHTML = '<i data-lucide="sparkles" class="w-5 h-5"></i>';
+        lucide.createIcons();
     }
+
+    // Secretary Actions (Accept/Reject)
+    document.querySelectorAll('.verify-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const proofId = this.dataset.proofId;
+            const action = this.dataset.action;
+            const originalContent = this.innerHTML;
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="animate-spin w-3.5 h-3.5" data-lucide="loader-2"></i>';
+            lucide.createIcons();
+
+            try {
+                const response = await fetch(`/maintenance/verify-proof/${proofId}/${action}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Refresh current line or just reload
+                    window.location.reload(); 
+                } else {
+                    alert(data.message || "Action failed");
+                    this.disabled = false;
+                    this.innerHTML = originalContent;
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                console.error(err);
+                alert("An error occurred");
+                this.disabled = false;
+                this.innerHTML = originalContent;
+                lucide.createIcons();
+            }
+        });
+    });
 
     // Handle form submit visual state
     document.getElementById('upload-form').onsubmit = function() {

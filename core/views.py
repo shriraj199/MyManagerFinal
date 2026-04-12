@@ -26,6 +26,12 @@ from PIL import Image
 import google.generativeai as genai
 import json
 
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass
+
 def add_pdf_watermark(canvas, doc):
     """Draws a light watermark in the center of the PDF page."""
     from django.contrib.staticfiles import finders
@@ -179,12 +185,12 @@ def extract_ocr_details(image_file):
         print("❌ CRITICAL ERROR: GEMINI_API_KEY NOT FOUND IN ENV")
         return {'error': 'API Key Missing'}
 
-    print(f"🔍 AI Scanning Image... (Size: {len(image_bytes)} bytes)")
-
-    # Reset file pointer
+    # Reset file pointer and read bytes
     image_file.seek(0)
     image_bytes = image_file.read()
     image_file.seek(0)
+
+    print(f"🔍 AI Scanning Image... (Size: {len(image_bytes)} bytes)")
     
     try:
         from google.generativeai.types import HarmCategory, HarmBlockThreshold
@@ -307,7 +313,12 @@ def maintenance_view(request):
         # We now extract details synchronously during the upload request
         details = extract_ocr_details(proof_file)
         
-        amt_paid = Decimal(str(details.get('amount', '0.00')).replace(',', ''))
+        # Handle cases where amount might be None or empty string
+        raw_amt = details.get('amount')
+        if not raw_amt or str(raw_amt).strip().lower() == 'none':
+            amt_paid = Decimal('0.00')
+        else:
+            amt_paid = Decimal(str(raw_amt).replace(',', '').strip())
         txn_id = details.get('txn_id')
         acc_digits = details.get('acc_digits')
         extracted_date = None
