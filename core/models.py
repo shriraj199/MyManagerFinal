@@ -190,7 +190,8 @@ class Subscription(models.Model):
     ]
     
     society_name = models.CharField(max_length=200)
-    secretary = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='subscriptions')
+    # Temporary: Use ID instead of ForeignKey to avoid CASCADE crashes while table is missing
+    secretary_id = models.PositiveIntegerField(null=True, blank=True)
     plan_tier = models.CharField(max_length=20, choices=PLAN_CHOICES)
     duration_months = models.IntegerField(choices=DURATION_CHOICES)
     amount = models.DecimalField(max_digits=12, decimal_places=2)

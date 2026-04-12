@@ -770,7 +770,7 @@ def subscription_view(request):
         end_date = timezone.now() + relativedelta(months=duration)
         Subscription.objects.create(
             society_name=request.user.society_name or "Individual",
-            secretary=request.user,
+            secretary_id=request.user.id,
             plan_tier=tier,
             duration_months=duration,
             amount=total_amount,
