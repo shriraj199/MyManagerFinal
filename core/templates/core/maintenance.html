@@ -9,17 +9,13 @@
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
         <div>
-            <h1 class="text-3xl font-extrabold text-textdark tracking-tight">{% if is_rental %}Rent Portal{% else
-                %}Maintenance Portal{% endif %}</h1>
-            <p class="text-muted font-medium mt-1">{% if is_rental %}Owner: <span class="text-primary font-bold">{{
-                    request.user.owner.first_name }}</span>{% else %}Society: <span class="text-primary font-bold">{{
-                    society_name }}</span>{% endif %}</p>
+            <h1 class="text-3xl font-extrabold text-textdark tracking-tight">{% if is_rental %}Rent Portal{% else %}Maintenance Portal{% endif %}</h1>
+            <p class="text-muted font-medium mt-1">{% if is_rental %}Owner: <span class="text-primary font-bold">{{ request.user.owner.first_name }}</span>{% else %}Society: <span class="text-primary font-bold">{{ society_name }}</span>{% endif %}</p>
         </div>
         {% if user.role == 'resident' %}
         <button onclick="document.getElementById('upload-modal').classList.remove('hidden')"
             class="bg-primary hover:bg-blue-700 text-white font-black rounded-2xl px-6 py-3.5 uppercase tracking-wider text-xs shadow-lg shadow-primary/30 transition-all flex items-center gap-2">
-            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload {% if is_rental %}Rent{% else %}Payment{% endif %}
-            Proof
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload {% if is_rental %}Rent{% else %}Payment{% endif %} Proof
         </button>
         {% endif %}
     </div>
@@ -52,8 +48,7 @@
         <!-- QR Code Section -->
         <div class="lg:col-span-1">
             <div class="bg-white border border-bordercolor rounded-[2.5rem] p-8 shadow-sm lg:sticky lg:top-8">
-                <h2 class="text-sm font-black uppercase text-primary tracking-widest mb-6 text-center">{% if is_rental
-                    %}Rent{% else %}Maintenance{% endif %} QR</h2>
+                <h2 class="text-sm font-black uppercase text-primary tracking-widest mb-6 text-center">{% if is_rental %}Rent{% else %}Maintenance{% endif %} QR</h2>
 
                 {% if is_rental %}
                 {% if settings.rent_qr %}
@@ -101,10 +96,8 @@
                 <h2 class="text-sm font-black uppercase text-primary tracking-widest mb-6 text-center">Payment Info</h2>
                 <div class="space-y-4">
                     <div class="flex justify-between items-center pb-3 border-b border-gray-50">
-                        <span class="text-xs font-bold text-muted">{% if is_rental %}Monthly Rent{% else %}Maintenance{%
-                            endif %}</span>
-                        <span class="text-sm font-black text-textdark">₹{% if is_rental %}{{ settings.monthly_rent }}{%
-                            else %}{{ settings.maintenance_charge }}{% endif %}</span>
+                        <span class="text-xs font-bold text-muted">{% if is_rental %}Monthly Rent{% else %}Maintenance{% endif %}</span>
+                        <span class="text-sm font-black text-textdark">₹{% if is_rental %}{{ settings.monthly_rent }}{% else %}{{ settings.maintenance_charge }}{% endif %}</span>
                     </div>
 
                     {% if is_rental and settings.account_number %}
@@ -134,11 +127,9 @@
                 class="bg-white border border-bordercolor rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col min-h-[500px]">
                 <div class="px-8 py-6 border-b border-gray-50 bg-gray-50/30 flex justify-between items-center">
                     <h2 class="text-lg font-bold text-textdark">
-                        {% if is_rental %}My Rent Proofs{% elif user.role == 'secretary' %}Pending & Recent Proofs{%
-                        else %}My Payment Proofs{% endif %}
+                        {% if is_rental %}My Rent Proofs{% elif user.role == 'secretary' %}Pending & Recent Proofs{% else %}My Payment Proofs{% endif %}
                     </h2>
-                    <span class="px-3 py-1 bg-white border border-gray-100 rounded-full text-xs font-bold text-muted">{{
-                        proofs|length }} Total</span>
+                    <span class="px-3 py-1 bg-white border border-gray-100 rounded-full text-xs font-bold text-muted">{{ proofs|length }} Total</span>
                 </div>
 
                 <div class="flex-1">
@@ -161,8 +152,7 @@
                                     {% endif %}
                                 </p>
                                 <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-[10px] text-muted font-bold uppercase tracking-widest">{{
-                                        proof.created_at|date:"M d, Y" }}</span>
+                                    <span class="text-[10px] text-muted font-bold uppercase tracking-widest">{{ proof.created_at|date:"M d, Y" }}</span>
                                     {% if proof.extracted_date %}
                                     <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
                                     <!-- <span
@@ -176,8 +166,7 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            {% if user.role == 'secretary' and proof.status != 'approved' and proof.status != 'verified'
-                            %}
+                            {% if user.role == 'secretary' and proof.status != 'approved' and proof.status != 'verified' %}
                             <!-- Secretary Action Buttons -->
                             <div class="flex items-center gap-2">
                                 <button data-proof-id="{{ proof.id }}" data-action="approve"
@@ -229,8 +218,7 @@
                     <div class="px-8 pb-8 pt-0 grid grid-cols-1 md:grid-cols-3 gap-4">
                         {% if proof.transaction_id %}
                         <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
-                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Transaction ID
-                            </p>
+                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Transaction ID</p>
                             <p class="text-xs font-black text-textdark font-mono truncate">{{ proof.transaction_id }}
                             </p>
                         </div>
@@ -245,10 +233,8 @@
 
                         {% if proof.extracted_account_digits %}
                         <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
-                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Account Digits
-                            </p>
-                            <p class="text-xs font-black text-textdark font-mono">XXXX{{ proof.extracted_account_digits
-                                }}</p>
+                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Account Digits</p>
+                            <p class="text-xs font-black text-textdark font-mono">XXXX{{ proof.extracted_account_digits }}</p>
                         </div>
                         {% endif %}
 
