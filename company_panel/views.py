@@ -130,3 +130,22 @@ def society_detail(request, society_name):
         'members': members,
         'flat_count': flat_count
     })
+
+@login_required
+def dangerous_flush_database(request):
+    """CRITICAL: Deletes ALL data from the database."""
+    if request.user.role != 'company':
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Only the company can flush the database.")
+    
+    from django.core.management import call_command
+    from django.contrib.auth import logout
+    from django.http import HttpResponse
+    
+    # Perform the flush
+    call_command('flush', interactive=False)
+    
+    # Logout the user as their session/user is now gone
+    logout(request)
+    
+    return HttpResponse("<h3>Database Flushed Successfully.</h3><p>All data has been deleted. You have been logged out. Please <a href='/register/'>Register</a> a new Company account.</p>")
