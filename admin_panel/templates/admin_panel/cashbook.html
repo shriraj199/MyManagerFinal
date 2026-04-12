@@ -14,14 +14,11 @@
 
     <!-- Tab Buttons -->
     <div class="flex bg-white p-1.5 rounded-[2rem] border border-bordercolor shadow-sm mb-10 overflow-hidden" id="cashbook-tabs">
-        <button onclick="switchTab('resident')" id="tab-resident" class="flex-1 py-3 px-4 rounded-[1.6rem] text-[10px] font-black uppercase tracking-widest transition-all bg-primary text-white shadow-lg shadow-primary/20">
-            Residents
+        <button onclick="switchTab('resident')" id="tab-resident" class="flex-1 py-4 px-6 rounded-[1.6rem] text-xs font-black uppercase tracking-widest transition-all bg-primary text-white shadow-lg shadow-primary/20">
+            Resident Records
         </button>
-        <button onclick="switchTab('other')" id="tab-other" class="flex-1 py-3 px-4 rounded-[1.6rem] text-[10px] font-black uppercase tracking-widest transition-all text-muted hover:bg-gray-50">
-            Society
-        </button>
-        <button onclick="switchTab('gate')" id="tab-gate" class="flex-1 py-3 px-4 rounded-[1.6rem] text-[10px] font-black uppercase tracking-widest transition-all text-muted hover:bg-gray-50">
-            Gate
+        <button onclick="switchTab('other')" id="tab-other" class="flex-1 py-4 px-6 rounded-[1.6rem] text-xs font-black uppercase tracking-widest transition-all text-muted hover:bg-gray-50">
+            Other Records
         </button>
     </div>
 
@@ -184,35 +181,28 @@
     function switchTab(tab) {
         const resBtn = document.getElementById('tab-resident');
         const othBtn = document.getElementById('tab-other');
-        const gateBtn = document.getElementById('tab-gate');
         const resContent = document.getElementById('content-resident');
         const othContent = document.getElementById('content-other');
-        const gateContent = document.getElementById('content-gate');
 
         const activeStyles = ['bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20'];
         const inactiveStyles = ['text-muted', 'hover:bg-gray-50'];
 
-        // Reset all buttons
-        [resBtn, othBtn, gateBtn].forEach(b => {
-            b.classList.remove(...activeStyles);
-            b.classList.add(...inactiveStyles);
-        });
-        
-        // Hide all contents
-        [resContent, othContent, gateContent].forEach(c => c.classList.add('hidden'));
-
         if (tab === 'resident') {
             resBtn.classList.add(...activeStyles);
             resBtn.classList.remove(...inactiveStyles);
+            othBtn.classList.remove(...activeStyles);
+            othBtn.classList.add(...inactiveStyles);
+            
             resContent.classList.remove('hidden');
-        } else if (tab === 'other') {
+            othContent.classList.add('hidden');
+        } else {
             othBtn.classList.add(...activeStyles);
             othBtn.classList.remove(...inactiveStyles);
+            resBtn.classList.remove(...activeStyles);
+            resBtn.classList.add(...inactiveStyles);
+            
             othContent.classList.remove('hidden');
-        } else {
-            gateBtn.classList.add(...activeStyles);
-            gateBtn.classList.remove(...inactiveStyles);
-            gateContent.classList.remove('hidden');
+            resContent.classList.add('hidden');
         }
         
         lucide.createIcons();

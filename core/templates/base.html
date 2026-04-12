@@ -180,6 +180,13 @@
                 <i data-lucide="trending-up" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
                 <span class="text-sm tracking-wide">Expenses</span>
             </a>
+
+            {% url 'admin_visitors' as admin_visitors_url %}
+            <a href="{{ admin_visitors_url }}"
+                class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.path == admin_visitors_url %}bg-blue-50 text-indigo-600 font-bold shadow-sm shadow-blue-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">
+                <i data-lucide="shield-check" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                <span class="text-sm tracking-wide">Gate Entries</span>
+            </a>
             {% endif %}
 
             {% if user.role != 'watchman' %}

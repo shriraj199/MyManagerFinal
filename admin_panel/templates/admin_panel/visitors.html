@@ -1,54 +1,98 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="flex flex-col flex-1 max-w-lg mx-auto w-full p-6">
+<div class="flex flex-col flex-1 max-w-lg mx-auto w-full p-6 pb-24">
+    <!-- Header -->
     <div class="flex items-center mb-8 gap-4">
-        <a href="{% url 'admin_dashboard' %}" class="w-10 h-10 rounded-full bg-white border border-gray-200 flex flex-shrink-0 items-center justify-center shadow-sm hover:bg-gray-50 transition">
-            <i data-lucide="arrow-left" class="w-5 h-5 text-textdark"></i>
+        <a href="{% url 'admin_dashboard' %}" class="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex flex-shrink-0 items-center justify-center shadow-sm hover:bg-gray-50 transition active:scale-90">
+            <i data-lucide="arrow-left" class="w-6 h-6 text-textdark"></i>
         </a>
         <div>
-            <h1 class="text-2xl font-extrabold text-textdark tracking-tight">Visitors Log</h1>
-            <p class="text-sm text-muted">Monitor daily entry & exits</p>
+            <h1 class="text-3xl font-extrabold text-textdark tracking-tight leading-none mb-1">Gate Entries</h1>
+            <p class="text-[10px] font-black text-muted uppercase tracking-widest">{{ user.society_name }} &bull; Security Logs</p>
         </div>
     </div>
 
+    <!-- Stats Bar -->
+    <div class="flex gap-4 mb-8">
+        <div class="flex-1 bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm">
+            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Today's Entries</p>
+            <p class="text-2xl font-black text-textdark">{{ visitors|length }}</p>
+        </div>
+        <div class="flex-1 bg-indigo-50 border border-indigo-100 p-4 rounded-[2rem] shadow-sm">
+            <p class="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-1">Society Log</p>
+            <p class="text-2xl font-black text-indigo-700">Active</p>
+        </div>
+    </div>
+
+    <!-- Visitors List -->
     <div class="space-y-4">
         {% for visitor in visitors %}
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-bordercolor transition hover:shadow-md">
-            <div class="flex items-center gap-4 mb-6 pb-6 border-b border-gray-50">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 {% if visitor.visitor_type == 'Delivery' %}bg-amber-50 text-amber-600{% else %}bg-blue-50 text-blue-600{% endif %}">
-                    {% if visitor.visitor_type == 'Delivery' %}
-                        <i data-lucide="package" class="w-7 h-7"></i>
-                    {% else %}
-                        <i data-lucide="user-check" class="w-7 h-7"></i>
-                    {% endif %}
+        <div class="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden flex flex-col gap-2 group hover:shadow-md transition">
+            <div class="flex items-start justify-between gap-3 w-full">
+                <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                    </div>
+                    <div class="min-w-0 pr-2">
+                        <h3 class="font-extrabold text-gray-900 text-base md:text-lg truncate leading-tight mb-0.5">{{ visitor.name }}</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{{ visitor.visitor_type }}</span>
+                            <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                            <span class="text-[10px] font-bold text-gray-400">{{ visitor.time_in|date:"d M, h:i A" }}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-textdark text-lg leading-tight">{{ visitor.name }}</h3>
-                    <p class="text-xs font-extrabold text-muted uppercase tracking-widest mt-1">{{ visitor.visitor_type }} &bull; Unit {{ visitor.unit }}</p>
+                <div class="flex flex-col items-end shrink-0 pl-2 pt-1 text-right">
+                    <span class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Unit</span>
+                    <span class="font-black text-textdark text-base tracking-tight leading-none">{{ visitor.unit }}</span>
                 </div>
             </div>
             
-            <div class="flex justify-between items-center">
-                <div class="flex gap-6">
-                    <div>
-                        <span class="text-[10px] uppercase font-extrabold text-muted tracking-widest block mb-1">Entry</span>
-                        <span class="text-base font-bold text-textdark">{{ visitor.time_in|date:"h:i A" }}</span>
-                    </div>
+            <div class="flex items-center justify-between gap-4 mt-2 pl-[3.75rem]">
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] font-bold text-muted uppercase tracking-widest">Recorded By: {{ visitor.recorded_by|default:"Watchman" }}</span>
                 </div>
-                {% if visitor.status == 'Inside' %}
-                    <button class="bg-red-500 hover:bg-red-600 text-white font-extrabold py-3 px-6 rounded-2xl text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-red-500/20 transition-all active:scale-95">
-                        Checkout <i data-lucide="log-out" class="w-4 h-4"></i>
+                <div class="flex items-center gap-2">
+                    {% if visitor.visitor_photo %}
+                    <button type="button" onclick="showReceipt('{{ visitor.visitor_photo.url }}')" class="w-10 h-10 rounded-2xl bg-gray-50 text-muted hover:bg-gray-100 flex items-center justify-center transition border-none cursor-pointer">
+                        <i data-lucide="user" class="w-5 h-5"></i>
                     </button>
-                {% else %}
-                    <div class="bg-emerald-50 text-emerald-600 px-5 py-2.5 rounded-2xl text-xs font-extrabold uppercase tracking-widest border border-emerald-100 flex items-center gap-2">
-                        <i data-lucide="check" class="w-4 h-4"></i> Complete
-                    </div>
-                {% endif %}
+                    {% endif %}
+                    {% if visitor.vehicle_photo %}
+                    <button type="button" onclick="showReceipt('{{ visitor.vehicle_photo.url }}')" class="w-10 h-10 rounded-2xl bg-gray-50 text-muted hover:bg-gray-100 flex items-center justify-center transition border-none cursor-pointer">
+                        <i data-lucide="truck" class="w-5 h-5"></i>
+                    </button>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% empty %}
-        <p class="text-center text-muted mt-10 font-medium text-lg">No visitors today.</p>
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100 opacity-50">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
+                <i data-lucide="user-x" class="w-8 h-8 text-muted"></i>
+            </div>
+            <h3 class="text-lg font-bold text-textdark leading-none mb-2">No Entries</h3>
+            <p class="text-xs font-medium text-muted">Gate records are currently empty.</p>
+        </div>
         {% endfor %}
     </div>
 </div>
+
+<script>
+    function showReceipt(url) {
+        Swal.fire({
+            imageUrl: url,
+            imageAlt: 'Proof Preview',
+            showCloseButton: true,
+            showConfirmButton: false,
+            padding: '1rem',
+            background: '#ffffff',
+            customClass: {
+                popup: 'rounded-[2rem]',
+                image: 'rounded-xl max-h-[70vh] object-contain',
+                closeButton: 'focus:outline-none'
+            }
+        });
+    }
+</script>
 {% endblock %}

@@ -47,7 +47,10 @@ def dashboard(request):
 @login_required
 def visitors_list(request):
     if request.user.role not in ['admin', 'company', 'secretary']: return redirect('resident_dashboard')
-    visitors = Visitor.objects.all()
+    visitors = Visitor.objects.filter(time_in__date=timezone.now().date()).order_by('-time_in')
+    # If no visitors today, show all recent
+    if not visitors.exists():
+        visitors = Visitor.objects.all().order_by('-time_in')[:50]
     return render(request, 'admin_panel/visitors.html', {'visitors': visitors})
 
 @login_required
