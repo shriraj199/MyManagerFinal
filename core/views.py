@@ -716,3 +716,68 @@ def gate_records(request):
     from admin_panel.models import Visitor
     all_visitors = Visitor.objects.all().order_by('-time_in')
     return render(request, 'core/gate_records.html', {'visitors': all_visitors})
+
+@login_required
+def subscription_view(request):
+    if request.user.role == 'company':
+        return redirect('home')
+    
+    from .models import Subscription
+    from django.utils import timezone
+    from dateutil.relativedelta import relativedelta
+    from decimal import Decimal
+    
+    # Active subscription for this society
+    subscription = Subscription.objects.filter(
+        society_name=request.user.society_name, 
+        is_active=True, 
+        end_date__gt=timezone.now()
+    ).first()
+    
+    if request.method == 'POST':
+        flats_count = int(request.POST.get('flats_count', 0))
+        duration = int(request.POST.get('duration', 1))
+        
+        # Determine tier and rate
+        if flats_count <= 250:
+            multiplier = 250
+            if duration == 1: rate = 55
+            elif duration == 6: rate = 45
+            else: rate = 40
+            tier = '1-250'
+        elif flats_count <= 500:
+            multiplier = 500
+            if duration == 1: rate = 45
+            elif duration == 6: rate = 35
+            else: rate = 30
+            tier = '251-500'
+        else:
+            multiplier = flats_count
+            if duration == 1: rate = 35
+            elif duration == 6: rate = 25
+            else: rate = 20
+            tier = '501+'
+            
+        total_amount = Decimal(multiplier) * Decimal(rate) * Decimal(duration)
+        
+        # Deactivate old subscriptions for this society
+        Subscription.objects.filter(society_name=request.user.society_name).update(is_active=False)
+        
+        # Create new subscription
+        end_date = timezone.now() + relativedelta(months=duration)
+        Subscription.objects.create(
+            society_name=request.user.society_name or "Individual",
+            secretary=request.user,
+            plan_tier=tier,
+            duration_months=duration,
+            amount=total_amount,
+            end_date=end_date,
+            is_active=True
+        )
+        
+        messages.success(request, f"Successfully subscribed to {tier} plan for {duration} month(s)!")
+        return redirect('subscription_view')
+
+    return render(request, 'core/subscription.html', {
+        'active_subscription': subscription
+    })

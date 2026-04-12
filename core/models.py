@@ -96,6 +96,39 @@ class User(AbstractUser):
                 
         return current_due
 
+    @property
+    def is_subscription_active(self):
+        if self.role == 'company':
+            return True
+        
+        from django.utils import timezone
+        # If no society name (newly registered), allow 7 day trial
+        if not self.society_name:
+            diff = timezone.now() - self.date_joined
+            return diff.days < 7
+
+        # Check for active subscription for this society
+        from .models import Subscription
+        active_sub = Subscription.objects.filter(
+            society_name=self.society_name, 
+            is_active=True, 
+            end_date__gt=timezone.now()
+        ).exists()
+        
+        if active_sub:
+            return True
+            
+        # Fallback to trial based on registration date
+        diff = timezone.now() - self.date_joined
+        return diff.days < 7
+
+    @property
+    def trial_days_left(self):
+        from django.utils import timezone
+        diff = timezone.now() - self.date_joined
+        remaining = 7 - diff.days
+        return max(0, remaining)
+
 import string
 import random
 
@@ -143,6 +176,30 @@ class PaymentProof(models.Model):
 
     def __str__(self):
         return f"Proof by {self.user.username} for {self.society_name} ({self.status})"
+
+class Subscription(models.Model):
+    PLAN_CHOICES = [
+        ('1-250', '1-250 Flats'),
+        ('251-500', '251-500 Flats'),
+        ('501+', '501 & Above Flats'),
+    ]
+    DURATION_CHOICES = [
+        (1, '1 Month'),
+        (6, '6 Months'),
+        (12, '1 Year'),
+    ]
+    
+    society_name = models.CharField(max_length=200)
+    secretary = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscriptions')
+    plan_tier = models.CharField(max_length=20, choices=PLAN_CHOICES)
+    duration_months = models.IntegerField(choices=DURATION_CHOICES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    start_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.society_name} - {self.plan_tier} ({self.duration_months}m)"
 
 class SocietyMaintenanceSettings(models.Model):
     society_name = models.CharField(max_length=200, unique=True)

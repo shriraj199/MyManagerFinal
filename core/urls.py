@@ -16,6 +16,7 @@ urlpatterns = [
     path('maintenance/delete-proof/<int:proof_id>/', views.delete_payment_proof, name='delete_payment_proof'),
     path('maintenance/verify-proof/<int:proof_id>/<str:action>/', views.verify_payment_proof, name='verify_payment_proof'),
     path('maintenance/ocr-preview/', views.process_ocr_preview, name='process_ocr_preview'),
+    path('subscription/', views.subscription_view, name='subscription_view'),
     
     # API Endpoints
     path('api/register/', api_views.register_user, name='api_register'),
