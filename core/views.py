@@ -196,11 +196,7 @@ def extract_ocr_details(image_file):
         from google.generativeai.types import HarmCategory, HarmBlockThreshold
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        # Initialize model with fallback for regional/API version availability
-        try:
-            model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        except:
-            model = genai.GenerativeModel('gemini-pro-vision')
+        # Initialization is handled dynamically in the fallback section below
         
         # Prepare image (removed resizing to preserve small text for better OCR)
         img = Image.open(BytesIO(image_bytes))
@@ -235,7 +231,20 @@ def extract_ocr_details(image_file):
             'data': image_bytes
         }
         
-        response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
+        # Multi-stage model fallback
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
+        except Exception as e:
+            if "404" in str(e) or "not found" in str(e).lower():
+                try:
+                    # Try legacy Pro Vision if Flash is missing in region/version
+                    model = genai.GenerativeModel('gemini-pro-vision')
+                    response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
+                except Exception as e2:
+                    return {'error': f'All Gemini models failed. Error: {str(e2)}'}
+            else:
+                return {'error': f'AI Error: {str(e)}'}
         
         if not response.candidates or not response.candidates[0].content.parts:
             # Check for safety block
