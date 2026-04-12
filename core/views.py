@@ -231,26 +231,20 @@ def extract_ocr_details(image_file):
             'data': image_bytes
         }
         
-        # Multi-stage model fallback using explicit model paths from your key diagnostics
+        # ULTIMATE DYNAMIC FALLBACK: Find any model that works for this specific API Key
         try:
-            # We add 'models/' prefix which was visible in your diagnostic list
-            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            # Get all models that support generating content
+            available_models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            
+            # Prioritize Flash if it exists in the list
+            flash_models = [m for m in available_models if 'flash' in m.name.lower()]
+            active_model_name = flash_models[0].name if flash_models else available_models[0].name
+            
+            print(f"🎯 Dynamic Model Selected: {active_model_name}")
+            model = genai.GenerativeModel(active_model_name)
             response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
         except Exception as e:
-            try:
-                # Try 2.0 Flash as it was also in your list
-                model = genai.GenerativeModel('models/gemini-2.0-flash')
-                response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
-            except Exception as e2:
-                    # Final attempt: List available models to see what names the API expects
-                    try:
-                        available_models = [m.name for m in genai.list_models()]
-                        model_list_str = ", ".join(available_models[:5]) # Show first 5
-                        return {'error': f'All Gemini models 404. Available on your key: {model_list_str}'}
-                    except:
-                        return {'error': f'All Gemini models failed. Error: {str(e2)}'}
-            else:
-                return {'error': f'AI Error: {str(e)}'}
+            return {'error': f'AI Scan Failed. Error: {str(e)}'}
         
         if not response.candidates or not response.candidates[0].content.parts:
             # Check for safety block
