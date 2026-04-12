@@ -196,7 +196,11 @@ def extract_ocr_details(image_file):
         from google.generativeai.types import HarmCategory, HarmBlockThreshold
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Initialize model with fallback for regional/API version availability
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        except:
+            model = genai.GenerativeModel('gemini-pro-vision')
         
         # Prepare image (removed resizing to preserve small text for better OCR)
         img = Image.open(BytesIO(image_bytes))
