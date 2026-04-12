@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('start_date', models.DateTimeField(auto_now_add=True)),
                 ('end_date', models.DateTimeField()),
                 ('is_active', models.BooleanField(default=True)),
-                ('secretary', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='subscriptions', to=settings.AUTH_USER_MODEL)),
+                ('secretary', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='subscriptions', to=settings.AUTH_USER_MODEL)),
             ],
         ),
     ]
