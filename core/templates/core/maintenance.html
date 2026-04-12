@@ -9,13 +9,17 @@
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
         <div>
-            <h1 class="text-3xl font-extrabold text-textdark tracking-tight">{% if is_rental %}Rent Portal{% else %}Maintenance Portal{% endif %}</h1>
-            <p class="text-muted font-medium mt-1">{% if is_rental %}Owner: <span class="text-primary font-bold">{{ request.user.owner.first_name }}</span>{% else %}Society: <span class="text-primary font-bold">{{ society_name }}</span>{% endif %}</p>
+            <h1 class="text-3xl font-extrabold text-textdark tracking-tight">{% if is_rental %}Rent Portal{% else
+                %}Maintenance Portal{% endif %}</h1>
+            <p class="text-muted font-medium mt-1">{% if is_rental %}Owner: <span class="text-primary font-bold">{{
+                    request.user.owner.first_name }}</span>{% else %}Society: <span class="text-primary font-bold">{{
+                    society_name }}</span>{% endif %}</p>
         </div>
         {% if user.role == 'resident' %}
         <button onclick="document.getElementById('upload-modal').classList.remove('hidden')"
             class="bg-primary hover:bg-blue-700 text-white font-black rounded-2xl px-6 py-3.5 uppercase tracking-wider text-xs shadow-lg shadow-primary/30 transition-all flex items-center gap-2">
-            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload {% if is_rental %}Rent{% else %}Payment{% endif %} Proof
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload {% if is_rental %}Rent{% else %}Payment{% endif %}
+            Proof
         </button>
         {% endif %}
     </div>
@@ -48,49 +52,61 @@
         <!-- QR Code Section -->
         <div class="lg:col-span-1">
             <div class="bg-white border border-bordercolor rounded-[2.5rem] p-8 shadow-sm lg:sticky lg:top-8">
-                <h2 class="text-sm font-black uppercase text-primary tracking-widest mb-6 text-center">{% if is_rental %}Rent{% else %}Maintenance{% endif %} QR</h2>
-                
+                <h2 class="text-sm font-black uppercase text-primary tracking-widest mb-6 text-center">{% if is_rental
+                    %}Rent{% else %}Maintenance{% endif %} QR</h2>
+
                 {% if is_rental %}
-                    {% if settings.rent_qr %}
-                    <div class="bg-gray-50 rounded-3xl p-4 border border-dashed border-gray-200 aspect-square flex items-center justify-center overflow-hidden mb-6 group relative">
-                        <img src="{{ settings.rent_qr.url }}" loading="lazy" alt="Rent QR" class="w-full h-full object-contain transition-transform group-hover:scale-110">
-                    </div>
-                    <p class="text-center text-xs text-muted font-medium">Scan this QR code to make your rent payment.</p>
-                    {% else %}
-                    <div class="bg-gray-50 rounded-3xl p-12 border border-dashed border-gray-200 flex flex-col items-center justify-center text-center mb-6">
-                        <i data-lucide="qr-code" class="w-12 h-12 text-gray-300 mb-4"></i>
-                        <p class="text-xs text-muted font-bold">QR Code not available yet.</p>
-                    </div>
-                    {% endif %}
+                {% if settings.rent_qr %}
+                <div
+                    class="bg-gray-50 rounded-3xl p-4 border border-dashed border-gray-200 aspect-square flex items-center justify-center overflow-hidden mb-6 group relative">
+                    <img src="{{ settings.rent_qr.url }}" loading="lazy" alt="Rent QR"
+                        class="w-full h-full object-contain transition-transform group-hover:scale-110">
+                </div>
+                <p class="text-center text-xs text-muted font-medium">Scan this QR code to make your rent payment.</p>
                 {% else %}
-                    {% if settings.maintenance_qr or invite_obj.maintenance_qr %}
-                    <div class="bg-gray-50 rounded-3xl p-4 border border-dashed border-gray-200 aspect-square flex items-center justify-center overflow-hidden mb-6 group relative">
-                        {% if settings.maintenance_qr %}
-                        <img src="{{ settings.maintenance_qr.url }}" loading="lazy" alt="Maintenance QR" class="w-full h-full object-contain transition-transform group-hover:scale-110">
-                        {% else %}
-                        <img src="{{ invite_obj.maintenance_qr.url }}" loading="lazy" alt="Maintenance QR" class="w-full h-full object-contain transition-transform group-hover:scale-110">
-                        {% endif %}
-                    </div>
-                    <p class="text-center text-xs text-muted font-medium">Scan this QR code to make your maintenance payment.</p>
+                <div
+                    class="bg-gray-50 rounded-3xl p-12 border border-dashed border-gray-200 flex flex-col items-center justify-center text-center mb-6">
+                    <i data-lucide="qr-code" class="w-12 h-12 text-gray-300 mb-4"></i>
+                    <p class="text-xs text-muted font-bold">QR Code not available yet.</p>
+                </div>
+                {% endif %}
+                {% else %}
+                {% if settings.maintenance_qr or invite_obj.maintenance_qr %}
+                <div
+                    class="bg-gray-50 rounded-3xl p-4 border border-dashed border-gray-200 aspect-square flex items-center justify-center overflow-hidden mb-6 group relative">
+                    {% if settings.maintenance_qr %}
+                    <img src="{{ settings.maintenance_qr.url }}" loading="lazy" alt="Maintenance QR"
+                        class="w-full h-full object-contain transition-transform group-hover:scale-110">
                     {% else %}
-                    <div class="bg-gray-50 rounded-3xl p-12 border border-dashed border-gray-200 flex flex-col items-center justify-center text-center mb-6">
-                        <i data-lucide="qr-code" class="w-12 h-12 text-gray-300 mb-4"></i>
-                        <p class="text-xs text-muted font-bold">QR Code not available yet.</p>
-                    </div>
+                    <img src="{{ invite_obj.maintenance_qr.url }}" loading="lazy" alt="Maintenance QR"
+                        class="w-full h-full object-contain transition-transform group-hover:scale-110">
                     {% endif %}
+                </div>
+                <p class="text-center text-xs text-muted font-medium">Scan this QR code to make your maintenance
+                    payment.</p>
+                {% else %}
+                <div
+                    class="bg-gray-50 rounded-3xl p-12 border border-dashed border-gray-200 flex flex-col items-center justify-center text-center mb-6">
+                    <i data-lucide="qr-code" class="w-12 h-12 text-gray-300 mb-4"></i>
+                    <p class="text-xs text-muted font-bold">QR Code not available yet.</p>
+                </div>
+                {% endif %}
                 {% endif %}
             </div>
 
             <!-- Fees Card -->
             {% if settings %}
-            <div class="bg-white border border-bordercolor rounded-[2.5rem] p-8 shadow-sm mt-8 lg:sticky lg:top-[450px]">
+            <div
+                class="bg-white border border-bordercolor rounded-[2.5rem] p-8 shadow-sm mt-8 lg:sticky lg:top-[450px]">
                 <h2 class="text-sm font-black uppercase text-primary tracking-widest mb-6 text-center">Payment Info</h2>
                 <div class="space-y-4">
                     <div class="flex justify-between items-center pb-3 border-b border-gray-50">
-                        <span class="text-xs font-bold text-muted">{% if is_rental %}Monthly Rent{% else %}Maintenance{% endif %}</span>
-                        <span class="text-sm font-black text-textdark">₹{% if is_rental %}{{ settings.monthly_rent }}{% else %}{{ settings.maintenance_charge }}{% endif %}</span>
+                        <span class="text-xs font-bold text-muted">{% if is_rental %}Monthly Rent{% else %}Maintenance{%
+                            endif %}</span>
+                        <span class="text-sm font-black text-textdark">₹{% if is_rental %}{{ settings.monthly_rent }}{%
+                            else %}{{ settings.maintenance_charge }}{% endif %}</span>
                     </div>
-                    
+
                     {% if is_rental and settings.account_number %}
                     <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex flex-col gap-1">
                         <p class="text-[9px] font-black text-primary uppercase tracking-widest">Bank Account</p>
@@ -101,7 +117,8 @@
                     <div class="mt-2">
                         <div class="bg-primary/5 p-4 rounded-2xl border border-primary/20">
                             <div class="flex justify-between items-center">
-                                <span class="text-xs font-black uppercase text-primary tracking-widest">Amount to Pay</span>
+                                <span class="text-xs font-black uppercase text-primary tracking-widest">Amount to
+                                    Pay</span>
                                 <span class="text-xl font-black text-primary">₹{{ target_fee }}</span>
                             </div>
                         </div>
@@ -113,33 +130,39 @@
 
         <!-- Proofs History Section -->
         <div class="lg:col-span-2">
-            <div class="bg-white border border-bordercolor rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+            <div
+                class="bg-white border border-bordercolor rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col min-h-[500px]">
                 <div class="px-8 py-6 border-b border-gray-50 bg-gray-50/30 flex justify-between items-center">
                     <h2 class="text-lg font-bold text-textdark">
-                        {% if is_rental %}My Rent Proofs{% elif user.role == 'secretary' %}Pending & Recent Proofs{% else %}My Payment Proofs{% endif %}
+                        {% if is_rental %}My Rent Proofs{% elif user.role == 'secretary' %}Pending & Recent Proofs{%
+                        else %}My Payment Proofs{% endif %}
                     </h2>
-                    <span class="px-3 py-1 bg-white border border-gray-100 rounded-full text-xs font-bold text-muted">{{ proofs|length }} Total</span>
+                    <span class="px-3 py-1 bg-white border border-gray-100 rounded-full text-xs font-bold text-muted">{{
+                        proofs|length }} Total</span>
                 </div>
 
                 <div class="flex-1">
                     {% for proof in proofs %}
-                    <div class="px-8 py-6 hover:bg-gray-50/50 transition-all border-b border-gray-50 last:border-0 flex flex-col sm:flex-row justify-between sm:items-center gap-4 
+                    <div
+                        class="px-8 py-6 hover:bg-gray-50/50 transition-all border-b border-gray-50 last:border-0 flex flex-col sm:flex-row justify-between sm:items-center gap-4 
                         {% if proof.status == 'verified' %} border-l-4 border-l-green-500 bg-green-50/10 {% elif proof.status == 'flagged' %} border-l-4 border-l-rose-500 bg-rose-50/10 {% endif %}">
                         <div class="flex items-center gap-4">
                             <div class="w-14 h-14 bg-gray-100 rounded-2xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all shadow-sm"
                                 onclick="window.open('{{ proof.proof_image.url }}')">
-                                <img src="{{ proof.proof_image.url }}" loading="lazy" class="w-full h-full object-cover">
+                                <img src="{{ proof.proof_image.url }}" loading="lazy"
+                                    class="w-full h-full object-cover">
                             </div>
                             <div>
                                 <p class="text-sm font-extrabold text-textdark">
                                     {% if user.role == 'secretary' %}
-                                        {{ proof.user.first_name|default:proof.user.username }}
+                                    {{ proof.user.first_name|default:proof.user.username }}
                                     {% else %}
-                                        Proof Uploaded
+                                    Proof Uploaded
                                     {% endif %}
                                 </p>
                                 <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-[10px] text-muted font-bold uppercase tracking-widest">{{ proof.created_at|date:"M d, Y" }}</span>
+                                    <span class="text-[10px] text-muted font-bold uppercase tracking-widest">{{
+                                        proof.created_at|date:"M d, Y" }}</span>
                                     {% if proof.extracted_date %}
                                     <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
                                     <!-- <span
@@ -153,18 +176,19 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            {% if user.role == 'secretary' and proof.status != 'approved' and proof.status != 'verified' %}
-                                <!-- Secretary Action Buttons -->
-                                <div class="flex items-center gap-2">
-                                    <button data-proof-id="{{ proof.id }}" data-action="approve" 
-                                       class="verify-btn px-4 py-1.5 bg-green-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-green-200 hover:bg-green-700 transition-all active:scale-90">
-                                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Accept
-                                    </button>
-                                    <button data-proof-id="{{ proof.id }}" data-action="reject" 
-                                       class="verify-btn px-4 py-1.5 bg-rose-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all active:scale-90">
-                                        <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Reject
-                                    </button>
-                                </div>
+                            {% if user.role == 'secretary' and proof.status != 'approved' and proof.status != 'verified'
+                            %}
+                            <!-- Secretary Action Buttons -->
+                            <div class="flex items-center gap-2">
+                                <button data-proof-id="{{ proof.id }}" data-action="approve"
+                                    class="verify-btn px-4 py-1.5 bg-green-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-green-200 hover:bg-green-700 transition-all active:scale-90">
+                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Accept
+                                </button>
+                                <button data-proof-id="{{ proof.id }}" data-action="reject"
+                                    class="verify-btn px-4 py-1.5 bg-rose-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all active:scale-90">
+                                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Reject
+                                </button>
+                            </div>
                             {% endif %}
 
                             {% if proof.status == 'verified' or proof.status == 'approved' %}
@@ -205,8 +229,10 @@
                     <div class="px-8 pb-8 pt-0 grid grid-cols-1 md:grid-cols-3 gap-4">
                         {% if proof.transaction_id %}
                         <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
-                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Transaction ID</p>
-                            <p class="text-xs font-black text-textdark font-mono truncate">{{ proof.transaction_id }}</p>
+                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Transaction ID
+                            </p>
+                            <p class="text-xs font-black text-textdark font-mono truncate">{{ proof.transaction_id }}
+                            </p>
                         </div>
                         {% endif %}
 
@@ -219,8 +245,10 @@
 
                         {% if proof.extracted_account_digits %}
                         <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
-                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Account Digits</p>
-                            <p class="text-xs font-black text-textdark font-mono">XXXX{{ proof.extracted_account_digits }}</p>
+                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Account Digits
+                            </p>
+                            <p class="text-xs font-black text-textdark font-mono">XXXX{{ proof.extracted_account_digits
+                                }}</p>
                         </div>
                         {% endif %}
 
@@ -256,7 +284,8 @@
             <h2 class="text-2xl font-extrabold text-textdark tracking-tight">Upload Proof</h2>
             <div id="ai-status" class="hidden items-center gap-2">
                 <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
                 <p class="text-[9px] text-primary font-black uppercase tracking-widest">Scanning...</p>
@@ -270,10 +299,12 @@
             <div id="capture-step" class="space-y-6">
                 <div class="relative group">
                     <input type="file" name="proof_image" id="proof-image-input" accept="image/*" required
-                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this)">
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        onchange="previewImage(this)">
                     <div id="drop-zone"
                         class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2rem] p-12 flex flex-col items-center justify-center text-center group-hover:border-primary group-hover:bg-blue-50/50 transition-all">
-                        <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-all">
+                        <div
+                            class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-all">
                             <i data-lucide="image" class="w-8 h-8 text-primary"></i>
                         </div>
                         <p class="text-xs font-black text-muted uppercase tracking-widest">Select Payment Screenshot</p>
@@ -289,45 +320,61 @@
 
                 <div id="ai-results" class="hidden space-y-4 animate-in fade-in slide-in-from-top-2">
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                            <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Amount (₹)</label>
+                        <div
+                            class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                            <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Amount
+                                (₹)</label>
                             <input type="text" name="extracted_amount" id="res-amount" placeholder="e.g. 1500"
-                                class="w-full text-sm font-black text-primary bg-transparent border-none outline-none" value="">
+                                class="w-full text-sm font-black text-primary bg-transparent border-none outline-none"
+                                value="">
                         </div>
-                        <div class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                            <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Date</label>
+                        <div
+                            class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                            <label
+                                class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Date</label>
                             <input type="text" name="extracted_date" id="res-date" placeholder="DD/MM/YYYY"
-                                class="w-full text-sm font-black text-textdark bg-transparent border-none outline-none" value="">
+                                class="w-full text-sm font-black text-textdark bg-transparent border-none outline-none"
+                                value="">
                         </div>
                     </div>
-                    <div class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                        <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction ID / UTR</label>
+                    <div
+                        class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                        <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction
+                            ID / UTR</label>
                         <input type="text" name="txn_id" id="res-txn" placeholder="Enter Reference No."
-                            class="w-full text-sm font-black text-textdark font-mono bg-transparent border-none outline-none" value="">
+                            class="w-full text-sm font-black text-textdark font-mono bg-transparent border-none outline-none"
+                            value="">
                     </div>
                 </div>
 
-                <div class="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 flex items-center justify-between gap-4">
+                <div
+                    class="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 flex items-center justify-between gap-4">
                     <div class="flex items-center gap-4">
-                        <div id="ai-icon-container" class="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white shrink-0">
+                        <div id="ai-icon-container"
+                            class="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white shrink-0">
                             <i data-lucide="sparkles" class="w-5 h-5"></i>
                         </div>
                         <div>
-                            <p id="ai-status-text" class="text-xs font-black text-textdark uppercase tracking-tight">AI Automatic Scan</p>
-                            <p id="ai-sub-text" class="text-[10px] text-muted font-medium">Details will be extracted automatically.</p>
+                            <p id="ai-status-text" class="text-xs font-black text-textdark uppercase tracking-tight">AI
+                                Automatic Scan</p>
+                            <p id="ai-sub-text" class="text-[10px] text-muted font-medium">Details will be extracted
+                                automatically.</p>
                         </div>
                     </div>
-                    <button type="button" id="retry-btn" onclick="retryScan()" class="hidden px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95">
+                    <button type="button" id="retry-btn" onclick="retryScan()"
+                        class="hidden px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95">
                         Retry Scan
                     </button>
                 </div>
 
-                <button type="submit" id="main-submit-btn" class="w-full mt-2 bg-primary hover:bg-blue-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-primary/30 transition-all flex items-center justify-center gap-2">
+                <button type="submit" id="main-submit-btn"
+                    class="w-full mt-2 bg-primary hover:bg-blue-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-primary/30 transition-all flex items-center justify-center gap-2">
                     <span id="btn-text">Confirm & Upload Proof</span>
                     <i id="btn-icon" data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
-                
-                <button type="button" onclick="resetForm()" class="w-full text-[9px] text-muted font-bold uppercase tracking-widest py-2">
+
+                <button type="button" onclick="resetForm()"
+                    class="w-full text-[9px] text-muted font-bold uppercase tracking-widest py-2">
                     Reselect Image
                 </button>
             </div>
@@ -354,7 +401,7 @@
                 document.getElementById('preview').src = e.target.result;
             }
             reader.readAsDataURL(file);
-            
+
             // Switch to review step
             document.getElementById('capture-step').classList.add('hidden');
             document.getElementById('review-step').classList.remove('hidden');
@@ -390,7 +437,7 @@
         const statusText = document.getElementById('ai-status-text');
         const subText = document.getElementById('ai-sub-text');
         const iconContainer = document.getElementById('ai-icon-container');
-        
+
         aiStatus.classList.remove('hidden');
         aiResults.classList.remove('hidden');
         document.getElementById('retry-btn').classList.add('hidden');
@@ -416,7 +463,7 @@
                 document.getElementById('res-amount').value = data.amount || "";
                 document.getElementById('res-date').value = data.date || "";
                 document.getElementById('res-txn').value = data.txn_id || "";
-                
+
                 statusText.innerText = "Scan Complete";
                 subText.innerText = "AI successfully extracted details. Check & Edit if needed.";
                 iconContainer.classList.remove('bg-primary', 'animate-pulse');
@@ -429,7 +476,7 @@
         } catch (error) {
             console.error(error);
             statusText.innerText = "Scan Failed";
-            subText.innerText = "AI couldn't extract all details. Please fill manually.";
+            subText.innerText = error.message || "AI couldn't extract all details. Please fill manually.";
             iconContainer.classList.remove('bg-primary', 'animate-pulse');
             iconContainer.classList.add('bg-rose-500');
             iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-5 h-5"></i>';
@@ -452,7 +499,7 @@
         document.getElementById('review-step').classList.add('hidden');
         document.getElementById('capture-step').classList.remove('hidden');
         document.getElementById('ai-results').classList.add('hidden');
-        
+
         // Reset AI UI
         const statusText = document.getElementById('ai-status-text');
         const subText = document.getElementById('ai-sub-text');
@@ -466,11 +513,11 @@
 
     // Secretary Actions (Accept/Reject)
     document.querySelectorAll('.verify-btn').forEach(btn => {
-        btn.addEventListener('click', async function() {
+        btn.addEventListener('click', async function () {
             const proofId = this.dataset.proofId;
             const action = this.dataset.action;
             const originalContent = this.innerHTML;
-            
+
             this.disabled = true;
             this.innerHTML = '<i class="animate-spin w-3.5 h-3.5" data-lucide="loader-2"></i>';
             lucide.createIcons();
@@ -484,10 +531,10 @@
                     }
                 });
                 const data = await response.json();
-                
+
                 if (data.success) {
                     // Refresh current line or just reload
-                    window.location.reload(); 
+                    window.location.reload();
                 } else {
                     alert(data.message || "Action failed");
                     this.disabled = false;
@@ -505,7 +552,7 @@
     });
 
     // Handle form submit visual state
-    document.getElementById('upload-form').onsubmit = function() {
+    document.getElementById('upload-form').onsubmit = function () {
         const btn = document.getElementById('main-submit-btn');
         const text = document.getElementById('btn-text');
         btn.disabled = true;
