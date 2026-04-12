@@ -62,6 +62,11 @@
                         <button onclick="copyInviteLink('{{ code.code }}')" class="w-8 h-8 bg-gray-50 hover:bg-gray-100 text-muted hover:text-primary rounded-xl flex items-center justify-center transition-colors" title="Copy Invite Link">
                             <i data-lucide="link" class="w-4 h-4"></i>
                         </button>
+                        <a href="{% url 'delete_society' code.society_name %}" 
+                           onclick="return confirm('CRITICAL: This will delete the entire society and ALL associated resident/staff accounts. Are you absolutely sure?')"
+                           class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-400 hover:text-rose-600 rounded-xl flex items-center justify-center transition-colors" title="Delete Society">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </a>
                     </div>
                 </div>
                 {% empty %}
@@ -80,8 +85,15 @@
                         <p class="text-sm font-extrabold text-textdark">{{ sec.email }}</p>
                         <p class="text-xs font-bold text-muted mt-1">Society: <span class="text-primary">{{ sec.society_name }}</span></p>
                     </div>
-                    <div class="bg-green-50 text-green-600 w-8 h-8 rounded-full flex items-center justify-center">
-                        <i data-lucide="check" class="w-4 h-4"></i>
+                    <div class="flex items-center gap-2">
+                        <div class="bg-green-50 text-green-600 w-8 h-8 rounded-full flex items-center justify-center">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                        </div>
+                        <a href="{% url 'delete_secretary' sec.id %}" 
+                           onclick="return confirm('Delete this secretary? This will NOT delete the society residents.')"
+                           class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-400 hover:text-rose-600 rounded-xl flex items-center justify-center transition-colors" title="Delete Secretary">
+                            <i data-lucide="user-minus" class="w-4 h-4"></i>
+                        </a>
                     </div>
                 </div>
                 {% empty %}

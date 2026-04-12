@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from core.models import InviteCode, User, SocietyMaintenanceSettings
@@ -49,4 +49,38 @@ def generate_code(request):
         else:
             messages.error(request, 'Society name is required.')
             
+    return redirect('company_dashboard')
+
+@login_required
+def delete_society(request, society_name):
+    if request.user.role != 'company':
+        return redirect('resident_dashboard')
+    
+    # 1. CASCADE DELETE: All users associated with this society (Secretaries, Residents, Watchmen)
+    deleted_count, _ = User.objects.filter(society_name=society_name).delete()
+    
+    # 2. Delete Invite Codes
+    InviteCode.objects.filter(society_name=society_name).delete()
+    
+    # 3. Delete Maintenance Settings
+    SocietyMaintenanceSettings.objects.filter(society_name=society_name).delete()
+    
+    # 4. Delete Subscription data if any
+    from core.models import Subscription
+    Subscription.objects.filter(society_name=society_name).delete()
+    
+    messages.success(request, f"Successfully deleted society '{society_name}' and {deleted_count} associated accounts.")
+    return redirect('company_dashboard')
+
+@login_required
+def delete_secretary(request, secretary_id):
+    if request.user.role != 'company':
+        return redirect('resident_dashboard')
+    
+    from core.models import User
+    sec = get_object_or_404(User, id=secretary_id, role='secretary')
+    society_name = sec.society_name
+    sec.delete()
+    
+    messages.success(request, f"Successfully deleted Secretary {sec.username} for society {society_name}.")
     return redirect('company_dashboard')
