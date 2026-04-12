@@ -230,20 +230,39 @@ def extract_ocr_details(image_file):
             return {'error': 'AI Blocked or Empty'}
 
         raw_text = response.text
+        
+        # 1. Try to get JSON from response
         clean_resp = raw_text.replace('```json', '').replace('```', '').strip()
         match = re.search(r'\{.*\}', clean_resp, re.DOTALL)
         data = json.loads(match.group(0)) if match else {}
         
-        # Sanitization
-        processed_amount = str(data.get('amount', '')).replace('₹', '').replace(',', '').strip()
-        if processed_amount.lower() == 'none' or not processed_amount:
-            processed_amount = ""
+        # 2. Robust Regex Fallbacks (The "Straight Image to Text" approach)
+        ext_amt = str(data.get('amount') or "")
+        if not ext_amt or ext_amt.lower() == 'none':
+            amt_match = re.search(r'₹\s?(\d+(?:,\d+)*(?:\.\d+)?)', raw_text)
+            ext_amt = amt_match.group(1) if amt_match else ""
+            
+        ext_date = str(data.get('date') or "")
+        if not ext_date or ext_date.lower() == 'none':
+            # Look for common date patterns DD MM YYYY
+            date_match = re.search(r'(\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s\d{4})', raw_text, re.IGNORECASE)
+            ext_date = date_match.group(1) if date_match else ""
+
+        ext_txn = str(data.get('txn_id') or data.get('utr') or "")
+        if not ext_txn or ext_txn.lower() == 'none':
+            txn_match = re.search(r'(?:UTR|Transaction ID|Ref|Ref No)[\s:]*([A-Z0-9]+)', raw_text, re.IGNORECASE)
+            ext_txn = txn_match.group(1) if txn_match else ""
+
+        ext_acc = str(data.get('acc_digits') or "")
+        if not ext_acc or ext_acc.lower() == 'none':
+            acc_match = re.search(r'X{2,}(\d{4})', raw_text)
+            ext_acc = acc_match.group(1) if acc_match else ""
 
         return {
-            'amount': processed_amount,
-            'date': data.get('date', '').replace('None', ''),
-            'txn_id': (data.get('txn_id') or data.get('utr') or '').replace('None', ''),
-            'acc_digits': str(data.get('acc_digits', '')).replace('X', '').replace('None', '').strip()[-4:]
+            'amount': ext_amt.replace('₹', '').replace(',', '').strip(),
+            'date': ext_date.strip(),
+            'txn_id': ext_txn.strip(),
+            'acc_digits': ext_acc.strip()[-4:] if ext_acc else ""
         }
     except Exception as e:
         print(f"Gemini API Error: {e}")
