@@ -287,20 +287,23 @@
                     <img id="preview" class="w-full max-h-64 object-contain bg-white">
                 </div>
 
-                <div id="ai-results" class="hidden space-y-3 animate-in fade-in slide-in-from-top-2">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-white border border-gray-100 p-3 rounded-2xl shadow-sm">
-                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Extracted Amount</p>
-                            <p id="res-amount" class="text-xs font-black text-primary">Scanning...</p>
+                <div id="ai-results" class="hidden space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm">
+                            <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Amount (₹)</label>
+                            <input type="text" name="extracted_amount" id="res-amount" 
+                                class="w-full text-sm font-black text-primary bg-transparent border-b-2 border-transparent focus:border-primary outline-none transition-all" value="Scanning...">
                         </div>
-                        <div class="bg-white border border-gray-100 p-3 rounded-2xl shadow-sm">
-                            <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Payment Date</p>
-                            <p id="res-date" class="text-xs font-black text-textdark">Scanning...</p>
+                        <div class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm">
+                            <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Date</label>
+                            <input type="text" name="extracted_date" id="res-date" 
+                                class="w-full text-sm font-black text-textdark bg-transparent border-b-2 border-transparent focus:border-primary outline-none transition-all" value="Scanning...">
                         </div>
                     </div>
-                    <div class="bg-white border border-gray-100 p-3 rounded-2xl shadow-sm">
-                        <p class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Transaction ID / UTR</p>
-                        <p id="res-txn" class="text-xs font-black text-textdark font-mono truncate">Scanning...</p>
+                    <div class="bg-white border border-gray-100 p-4 rounded-[2rem] shadow-sm">
+                        <label class="text-[9px] font-black text-muted uppercase tracking-widest block mb-1">Transaction ID / UTR</label>
+                        <input type="text" name="txn_id" id="res-txn" 
+                            class="w-full text-sm font-black text-textdark font-mono bg-transparent border-b-2 border-transparent focus:border-primary outline-none transition-all" value="Scanning...">
                     </div>
                 </div>
 
@@ -402,12 +405,12 @@
             const data = await response.json();
 
             if (data.success) {
-                document.getElementById('res-amount').innerText = "₹" + (data.amount || "0.00");
-                document.getElementById('res-date').innerText = data.date || "Not found";
-                document.getElementById('res-txn').innerText = data.txn_id || "Not found";
+                document.getElementById('res-amount').value = data.amount || "";
+                document.getElementById('res-date').value = data.date || "";
+                document.getElementById('res-txn').value = data.txn_id || "";
                 
                 statusText.innerText = "Scan Complete";
-                subText.innerText = "AI successfully extracted the details above.";
+                subText.innerText = "AI extracted details. Please verify and edit if needed.";
                 iconContainer.classList.remove('bg-primary', 'animate-pulse');
                 iconContainer.classList.add('bg-green-600');
                 iconContainer.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i>';
@@ -418,14 +421,14 @@
         } catch (error) {
             console.error(error);
             statusText.innerText = "Scan Failed";
-            subText.innerText = "AI couldn't read the image. You can still upload manually.";
+            subText.innerText = "AI couldn't read the image. Please enter details manually.";
             iconContainer.classList.remove('bg-primary', 'animate-pulse');
             iconContainer.classList.add('bg-rose-500');
             iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-5 h-5"></i>';
             
-            document.getElementById('res-amount').innerText = "—";
-            document.getElementById('res-date').innerText = "—";
-            document.getElementById('res-txn').innerText = "—";
+            document.getElementById('res-amount').value = "";
+            document.getElementById('res-date').value = "";
+            document.getElementById('res-txn').value = "";
             lucide.createIcons();
         } finally {
             aiStatus.classList.add('hidden');

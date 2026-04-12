@@ -209,14 +209,16 @@ def extract_ocr_details(image_file):
         OCR this UPI receipt (PhonePe, GPay, or Paytm). 
         Extract the following and return ONLY a JSON object:
         {
-          "amount": number (the final transaction amount),
-          "date": "DD/MM/YYYY" (the payment date),
+          "amount": number (the final transaction amount, e.g., 500.00),
+          "date": "DD/MM/YYYY" (convert dates like '29 Mar 2026' to '29/03/2026'),
           "txn_id": "string" (Transaction ID or UTR number),
-          "acc_digits": "string" (Last 4 digits of the credited account, e.g., '5200')
+          "acc_digits": "string" (Last 4 digits of the credited account, look for 'Credited to' or 'Transfer to')
         }
         Precautions:
-        - If amount is '₹1', return 1.0.
-        - If Transaction ID is missing but UTR is present, use UTR as txn_id.
+        - The amount is often the largest number or follows a '₹' symbol.
+        - If 'Credited to' shows 'XXXXXX5200', acc_digits is '5200'.
+        - If Transaction ID is unavailable, look for UTR.
+        - Ensure the date is in DD/MM/YYYY format even if written as 'Mar 29'.
         """
         
         # Permissive safety settings for PII receipts
@@ -309,26 +311,41 @@ def maintenance_view(request):
     if request.method == 'POST' and request.FILES.get('proof_image'):
         proof_file = request.FILES.get('proof_image')
         
-        # --- NEW: Automated Image to Text Logic ---
-        # We now extract details synchronously during the upload request
-        details = extract_ocr_details(proof_file)
-        
-        # Handle cases where amount might be None or empty string
-        raw_amt = details.get('amount')
-        if not raw_amt or str(raw_amt).strip().lower() == 'none':
-            amt_paid = Decimal('0.00')
-        else:
-            amt_paid = Decimal(str(raw_amt).replace(',', '').strip())
-        txn_id = details.get('txn_id')
-        acc_digits = details.get('acc_digits')
-        extracted_date = None
-        
-        if details.get('date'):
+        # Try to get details from POST (reviewed by user in frontend)
+        manual_amount = request.POST.get('extracted_amount')
+        manual_date_str = request.POST.get('extracted_date')
+        manual_txn = request.POST.get('txn_id')
+
+        if manual_amount and manual_date_str:
+            amt_paid = Decimal(str(manual_amount).replace(',', '').strip() or '0.00')
+            txn_id = manual_txn
+            acc_digits = None  # We'll try to get this from a quick scan anyway if needed, or skip
+            
             try:
-                extracted_date = datetime.strptime(details['date'], "%d/%m/%Y").date()
+                extracted_date = datetime.strptime(manual_date_str, "%d/%m/%Y").date()
             except:
-                try: extracted_date = datetime.strptime(details['date'], "%Y-%m-%d").date()
-                except: pass
+                try: extracted_date = datetime.strptime(manual_date_str, "%Y-%m-%d").date()
+                except: extracted_date = None
+        else:
+            # Fallback: OCR scan synchronously if not provided
+            details = extract_ocr_details(proof_file)
+            
+            # Handle cases where amount might be None or empty string
+            raw_amt = details.get('amount')
+            if not raw_amt or str(raw_amt).strip().lower() == 'none':
+                amt_paid = Decimal('0.00')
+            else:
+                amt_paid = Decimal(str(raw_amt).replace(',', '').strip())
+            txn_id = details.get('txn_id')
+            acc_digits = details.get('acc_digits')
+            extracted_date = None
+            
+            if details.get('date'):
+                try:
+                    extracted_date = datetime.strptime(details['date'], "%d/%m/%Y").date()
+                except:
+                    try: extracted_date = datetime.strptime(details['date'], "%Y-%m-%d").date()
+                    except: pass
 
         # 1. Unique Transaction ID Check (If AI found one)
         if txn_id:
