@@ -242,7 +242,13 @@ def extract_ocr_details(image_file):
                     model = genai.GenerativeModel('gemini-pro-vision')
                     response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
                 except Exception as e2:
-                    return {'error': f'All Gemini models failed. Error: {str(e2)}'}
+                    # Final attempt: List available models to see what names the API expects
+                    try:
+                        available_models = [m.name for m in genai.list_models()]
+                        model_list_str = ", ".join(available_models[:5]) # Show first 5
+                        return {'error': f'All Gemini models 404. Available on your key: {model_list_str}'}
+                    except:
+                        return {'error': f'All Gemini models failed. Error: {str(e2)}'}
             else:
                 return {'error': f'AI Error: {str(e)}'}
         
