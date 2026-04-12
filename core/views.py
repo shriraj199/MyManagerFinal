@@ -202,19 +202,20 @@ def extract_ocr_details(image_file):
         img = Image.open(BytesIO(image_bytes))
         
         prompt = """
-        OCR this UPI receipt. Carefully extract the payment details.
-        Return ONLY a JSON object with these keys:
+        ACT AS A RAW OCR ENGINE. Read every single detail from this UPI receipt.
+        Return ONLY a JSON object with these EXACT keys:
         {
-          "amount": number (the payment amount),
-          "date": "DD/MM/YYYY" (convert into this format),
-          "txn_id": "string" (Transaction ID or UTR number),
-          "acc_digits": "string" (Last 4 digits of the account credited)
+          "amount": number,
+          "date": "DD/MM/YYYY",
+          "txn_id": "string",
+          "acc_digits": "string"
         }
-        Extraction Rules:
-        - AMOUNT: Find the large text with '₹' or 'amount'.
-        - DATE: Find the payment timestamp. Convert '22 Mar 2026' or 'Mar 22' to standard 'DD/MM/YYYY'.
-        - TXN_ID: Find 'Transaction ID', 'UTR', or 'Ref No'.
-        - ACC_DIGITS: Look for 'Credited to', 'To Account', or 'XXXXXXX1234'. Extract only the last 4 digits.
+        GUIDELINES:
+        1. Date: If you see '29 Mar 2026', return '29/03/2026'.
+        2. Amount: It's the number next to '₹'.
+        3. Txn ID: Often labeled as 'Transaction ID' or 'UTR'.
+        4. Acc Digits: Find 'Credited to' or 'XXXXX1234' and give the last 4 digits.
+        5. DO NOT include any other text besides the JSON.
         """
         
         safety_settings = [
@@ -224,34 +225,45 @@ def extract_ocr_details(image_file):
             {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
         ]
         
-        response = model.generate_content([prompt, img], safety_settings=safety_settings)
+        # Prepare image correctly for Gemini
+        img_data = {
+            'mime_type': 'image/jpeg',
+            'data': image_bytes
+        }
+        
+        response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
         
         if not response.candidates or not response.candidates[0].content.parts:
-            return {'error': 'AI Blocked or Empty'}
+            # Check for safety block
+            finish_reason = response.candidates[0].finish_reason if response.candidates else "Unknown"
+            return {'error': f'AI Blocked (Reason: {finish_reason}). Try a clearer screenshot.'}
 
         raw_text = response.text
+        print(f"📄 Raw AI Text: {raw_text}")
         
         # 1. Try to get JSON from response
         clean_resp = raw_text.replace('```json', '').replace('```', '').strip()
         match = re.search(r'\{.*\}', clean_resp, re.DOTALL)
         data = json.loads(match.group(0)) if match else {}
         
-        # 2. Robust Regex Fallbacks (The "Straight Image to Text" approach)
+        # 2. Extract with Fallbacks
         ext_amt = str(data.get('amount') or "")
-        if not ext_amt or ext_amt.lower() == 'none':
-            amt_match = re.search(r'₹\s?(\d+(?:,\d+)*(?:\.\d+)?)', raw_text)
-            ext_amt = amt_match.group(1) if amt_match else ""
-            
         ext_date = str(data.get('date') or "")
-        if not ext_date or ext_date.lower() == 'none':
-            # Look for common date patterns DD MM YYYY
-            date_match = re.search(r'(\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s\d{4})', raw_text, re.IGNORECASE)
-            ext_date = date_match.group(1) if date_match else ""
-
         ext_txn = str(data.get('txn_id') or data.get('utr') or "")
-        if not ext_txn or ext_txn.lower() == 'none':
-            txn_match = re.search(r'(?:UTR|Transaction ID|Ref|Ref No)[\s:]*([A-Z0-9]+)', raw_text, re.IGNORECASE)
-            ext_txn = txn_match.group(1) if txn_match else ""
+        ext_acc = str(data.get('acc_digits') or "")
+
+        # regex search in raw_text if JSON missed it
+        if not ext_amt:
+            amt_match = re.search(r'₹\s?(\d+(?:,\d+)*(?:\.\d+)?)', raw_text)
+            if amt_match: ext_amt = amt_match.group(1)
+            
+        if not ext_date:
+            date_match = re.search(r'(\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s\d{4})', raw_text, re.IGNORECASE)
+            if date_match: ext_date = date_match.group(1)
+
+        if not ext_txn:
+            txn_match = re.search(r'(?:UTR|Transaction|Ref|Ref No)[\s:]*([A-Z0-9]{8,})', raw_text, re.IGNORECASE)
+            if txn_match: ext_txn = txn_match.group(1)
 
         ext_acc = str(data.get('acc_digits') or "")
         if not ext_acc or ext_acc.lower() == 'none':
