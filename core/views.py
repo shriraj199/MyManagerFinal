@@ -231,17 +231,17 @@ def extract_ocr_details(image_file):
             'data': image_bytes
         }
         
-        # Multi-stage model fallback
+        # Multi-stage model fallback using explicit model paths from your key diagnostics
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            # We add 'models/' prefix which was visible in your diagnostic list
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
             response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
         except Exception as e:
-            if "404" in str(e) or "not found" in str(e).lower():
-                try:
-                    # Try legacy Pro Vision if Flash is missing in region/version
-                    model = genai.GenerativeModel('gemini-pro-vision')
-                    response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
-                except Exception as e2:
+            try:
+                # Try 2.0 Flash as it was also in your list
+                model = genai.GenerativeModel('models/gemini-2.0-flash')
+                response = model.generate_content([prompt, img_data], safety_settings=safety_settings)
+            except Exception as e2:
                     # Final attempt: List available models to see what names the API expects
                     try:
                         available_models = [m.name for m in genai.list_models()]
