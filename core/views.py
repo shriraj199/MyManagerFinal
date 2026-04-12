@@ -258,6 +258,10 @@ def extract_ocr_details(image_file):
             acc_match = re.search(r'X{2,}(\d{4})', raw_text)
             ext_acc = acc_match.group(1) if acc_match else ""
 
+        # Final check: If everything is blank, it's a failure
+        if not ext_amt and not ext_date and not ext_txn:
+             return {'error': 'AI could not detect any payment details in this image.'}
+
         return {
             'amount': ext_amt.replace('₹', '').replace(',', '').strip(),
             'date': ext_date.strip(),
@@ -265,8 +269,8 @@ def extract_ocr_details(image_file):
             'acc_digits': ext_acc.strip()[-4:] if ext_acc else ""
         }
     except Exception as e:
-        print(f"Gemini API Error: {e}")
-        return {}
+        print(f"❌ Gemini OCR Error: {e}")
+        return {'error': str(e)}
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -275,16 +279,17 @@ from django.views.decorators.csrf import csrf_exempt
 def process_ocr_preview(request):
     """AJAX endpoint for OCR preview."""
     if request.method != 'POST':
-        return JsonResponse({'success': False}, status=405)
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
     
     image_file = request.FILES.get('proof_image')
     if not image_file:
-        return JsonResponse({'success': False}, status=400)
+        return JsonResponse({'success': False, 'error': 'No image uploaded'}, status=400)
 
     try:
         details = extract_ocr_details(image_file)
         if 'error' in details:
-            return JsonResponse({'success': False, 'error': details['error']}, status=200)
+            print(f"⚠️ OCR Details Error: {details['error']}")
+            return JsonResponse({'success': False, 'error': details['error']})
             
         return JsonResponse({
             'success': True,
@@ -294,6 +299,7 @@ def process_ocr_preview(request):
             'acc_digits': details.get('acc_digits')
         })
     except Exception as e:
+        print(f"❌ Process OCR Preview Exception: {e}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
