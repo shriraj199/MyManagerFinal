@@ -191,14 +191,19 @@ def notice_delete(request, notice_id):
 def cashbook_view(request):
     if request.user.role != 'secretary': return redirect('home')
     from core.models import PaymentProof, Expense
+    from .models import Visitor
     society_name = request.user.society_name
     
     resident_records = PaymentProof.objects.filter(society_name=society_name, status__in=['verified', 'approved']).order_by('-created_at')
     other_records = Expense.objects.filter(society_name=society_name).order_by('-created_at')
     
+    # Show gate entries relevant to society (usually all if not filtered by name/unit yet)
+    gate_records = Visitor.objects.all().order_by('-time_in')[:50]
+    
     return render(request, 'admin_panel/cashbook.html', {
         'resident_records': resident_records,
-        'other_records': other_records
+        'other_records': other_records,
+        'gate_records': gate_records
     })
 
 # ─── Complaints Management ────────────────────────────────────────────────────

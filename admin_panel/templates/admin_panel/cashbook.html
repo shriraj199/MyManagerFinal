@@ -14,11 +14,14 @@
 
     <!-- Tab Buttons -->
     <div class="flex bg-white p-1.5 rounded-[2rem] border border-bordercolor shadow-sm mb-10 overflow-hidden" id="cashbook-tabs">
-        <button onclick="switchTab('resident')" id="tab-resident" class="flex-1 py-4 px-6 rounded-[1.6rem] text-xs font-black uppercase tracking-widest transition-all bg-primary text-white shadow-lg shadow-primary/20">
-            Resident Records
+        <button onclick="switchTab('resident')" id="tab-resident" class="flex-1 py-3 px-4 rounded-[1.6rem] text-[10px] font-black uppercase tracking-widest transition-all bg-primary text-white shadow-lg shadow-primary/20">
+            Residents
         </button>
-        <button onclick="switchTab('other')" id="tab-other" class="flex-1 py-4 px-6 rounded-[1.6rem] text-xs font-black uppercase tracking-widest transition-all text-muted hover:bg-gray-50">
-            Other Records
+        <button onclick="switchTab('other')" id="tab-other" class="flex-1 py-3 px-4 rounded-[1.6rem] text-[10px] font-black uppercase tracking-widest transition-all text-muted hover:bg-gray-50">
+            Society
+        </button>
+        <button onclick="switchTab('gate')" id="tab-gate" class="flex-1 py-3 px-4 rounded-[1.6rem] text-[10px] font-black uppercase tracking-widest transition-all text-muted hover:bg-gray-50">
+            Gate
         </button>
     </div>
 
@@ -42,10 +45,13 @@
             </div>
             
             <div class="flex items-center justify-between gap-4 mt-2 pl-[3.75rem]">
-                <div class="flex items-center gap-2">
-                    <span class="text-[9px] md:text-[10px] font-black text-primary bg-blue-50 py-1 px-2.5 rounded-full border border-blue-100 uppercase tracking-wider">
+                <div class="flex flex-col gap-1">
+                    <span class="text-[9px] font-black text-primary bg-blue-50 py-1 px-2.5 rounded-full border border-blue-100 uppercase tracking-wider w-fit">
                         Unit: {{ record.user.unit_number|default:"-" }}
                     </span>
+                    {% if record.transaction_id %}
+                    <span class="text-[8px] font-bold text-muted font-mono uppercase tracking-tight">TXN: {{ record.transaction_id }}</span>
+                    {% endif %}
                 </div>
                 {% if record.proof_image %}
                 <button type="button" onclick="showReceipt('{{ record.proof_image.url }}')" class="w-9 h-9 rounded-[1rem] bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition border-none cursor-pointer">
@@ -105,6 +111,56 @@
             <p class="text-xs font-medium text-muted">Your financial record is clean.</p>
         </div>
         {% endfor %}
+    <div id="content-gate" class="space-y-4 hidden">
+        {% for visitor in gate_records %}
+        <div class="bg-white p-5 rounded-[1.5rem] border border-gray-100 shadow-sm relative overflow-hidden flex flex-col gap-2 group hover:shadow-md transition">
+            <div class="flex items-start justify-between gap-3 w-full">
+                <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                    </div>
+                    <div class="min-w-0 pr-2">
+                        <h3 class="font-extrabold text-gray-900 text-base md:text-lg truncate leading-tight mb-0.5">{{ visitor.name }}</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{{ visitor.visitor_type }}</span>
+                            <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                            <span class="text-[10px] font-bold text-gray-400">{{ visitor.time_in|date:"d M, h:i A" }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end shrink-0 pl-2 pt-1 text-right">
+                    <span class="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Unit</span>
+                    <span class="font-black text-textdark text-base tracking-tight leading-none">{{ visitor.unit }}</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between gap-4 mt-2 pl-[3.75rem]">
+                <div class="flex items-center gap-2">
+                    <span class="text-[8px] font-bold text-muted uppercase tracking-widest">Recorded By: {{ visitor.recorded_by|default:"Watchman" }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if visitor.visitor_photo %}
+                    <button type="button" onclick="showReceipt('{{ visitor.visitor_photo.url }}')" class="w-8 h-8 rounded-xl bg-gray-50 text-muted hover:bg-gray-100 flex items-center justify-center transition border-none cursor-pointer">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                    </button>
+                    {% endif %}
+                    {% if visitor.vehicle_photo %}
+                    <button type="button" onclick="showReceipt('{{ visitor.vehicle_photo.url }}')" class="w-8 h-8 rounded-xl bg-gray-50 text-muted hover:bg-gray-100 flex items-center justify-center transition border-none cursor-pointer">
+                        <i data-lucide="truck" class="w-4 h-4"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100 opacity-50">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
+                <i data-lucide="user-x" class="w-8 h-8 text-muted"></i>
+            </div>
+            <h3 class="text-lg font-bold text-textdark leading-none mb-2">No Entries</h3>
+            <p class="text-xs font-medium text-muted">Gate records are currently empty.</p>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
@@ -128,28 +184,35 @@
     function switchTab(tab) {
         const resBtn = document.getElementById('tab-resident');
         const othBtn = document.getElementById('tab-other');
+        const gateBtn = document.getElementById('tab-gate');
         const resContent = document.getElementById('content-resident');
         const othContent = document.getElementById('content-other');
+        const gateContent = document.getElementById('content-gate');
 
         const activeStyles = ['bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20'];
         const inactiveStyles = ['text-muted', 'hover:bg-gray-50'];
 
+        // Reset all buttons
+        [resBtn, othBtn, gateBtn].forEach(b => {
+            b.classList.remove(...activeStyles);
+            b.classList.add(...inactiveStyles);
+        });
+        
+        // Hide all contents
+        [resContent, othContent, gateContent].forEach(c => c.classList.add('hidden'));
+
         if (tab === 'resident') {
             resBtn.classList.add(...activeStyles);
             resBtn.classList.remove(...inactiveStyles);
-            othBtn.classList.remove(...activeStyles);
-            othBtn.classList.add(...inactiveStyles);
-            
             resContent.classList.remove('hidden');
-            othContent.classList.add('hidden');
-        } else {
+        } else if (tab === 'other') {
             othBtn.classList.add(...activeStyles);
             othBtn.classList.remove(...inactiveStyles);
-            resBtn.classList.remove(...activeStyles);
-            resBtn.classList.add(...inactiveStyles);
-            
             othContent.classList.remove('hidden');
-            resContent.classList.add('hidden');
+        } else {
+            gateBtn.classList.add(...activeStyles);
+            gateBtn.classList.remove(...inactiveStyles);
+            gateContent.classList.remove('hidden');
         }
         
         lucide.createIcons();
