@@ -198,30 +198,25 @@ def extract_ocr_details(image_file):
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # Prepare image and resize even smaller for speed (avoid Vercel timeouts)
+        # Prepare image (removed resizing to preserve small text for better OCR)
         img = Image.open(BytesIO(image_bytes))
-        if img.width > 800:
-            ratio = 800 / float(img.width)
-            new_height = int(float(img.height) * ratio)
-            img = img.resize((800, new_height), Image.Resampling.LANCZOS)
         
         prompt = """
-        OCR this UPI receipt (PhonePe, GPay, or Paytm). 
-        Extract the following and return ONLY a JSON object:
+        OCR this UPI receipt. Carefully extract the payment details.
+        Return ONLY a JSON object with these keys:
         {
-          "amount": number (the final transaction amount, e.g., 500.00),
-          "date": "DD/MM/YYYY" (convert dates like '29 Mar 2026' to '29/03/2026'),
+          "amount": number (the payment amount),
+          "date": "DD/MM/YYYY" (convert into this format),
           "txn_id": "string" (Transaction ID or UTR number),
-          "acc_digits": "string" (Last 4 digits of the credited account, look for 'Credited to' or 'Transfer to')
+          "acc_digits": "string" (Last 4 digits of the account credited)
         }
-        Precautions:
-        - The amount is often the largest number or follows a '₹' symbol.
-        - If 'Credited to' shows 'XXXXXX5200', acc_digits is '5200'.
-        - If Transaction ID is unavailable, look for UTR.
-        - Ensure the date is in DD/MM/YYYY format even if written as 'Mar 29'.
+        Extraction Rules:
+        - AMOUNT: Find the large text with '₹' or 'amount'.
+        - DATE: Find the payment timestamp. Convert '22 Mar 2026' or 'Mar 22' to standard 'DD/MM/YYYY'.
+        - TXN_ID: Find 'Transaction ID', 'UTR', or 'Ref No'.
+        - ACC_DIGITS: Look for 'Credited to', 'To Account', or 'XXXXXXX1234'. Extract only the last 4 digits.
         """
         
-        # Permissive safety settings for PII receipts
         safety_settings = [
             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
             {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -231,28 +226,24 @@ def extract_ocr_details(image_file):
         
         response = model.generate_content([prompt, img], safety_settings=safety_settings)
         
-        print(f"🤖 AI Response Received. Finish Reason: {response.candidates[0].finish_reason if response.candidates else 'No Candidates'}")
-        
         if not response.candidates or not response.candidates[0].content.parts:
             return {'error': 'AI Blocked or Empty'}
 
         raw_text = response.text
-        print(f"📄 Raw AI Text: {raw_text}")
-        
         clean_resp = raw_text.replace('```json', '').replace('```', '').strip()
         match = re.search(r'\{.*\}', clean_resp, re.DOTALL)
-        if match:
-            data = json.loads(match.group(0))
-            print(f"✅ Extracted Data: {data}")
-        else:
-            print("⚠️ Failed to parse JSON from AI response")
-            data = {}
-            
+        data = json.loads(match.group(0)) if match else {}
+        
+        # Sanitization
+        processed_amount = str(data.get('amount', '')).replace('₹', '').replace(',', '').strip()
+        if processed_amount.lower() == 'none' or not processed_amount:
+            processed_amount = ""
+
         return {
-            'amount': str(data.get('amount', '0')).replace('₹', '').replace(',', '').strip(),
-            'date': data.get('date'),
-            'txn_id': data.get('txn_id') or data.get('utr'),
-            'acc_digits': str(data.get('acc_digits', '')).replace('X', '').strip()[-4:]
+            'amount': processed_amount,
+            'date': data.get('date', '').replace('None', ''),
+            'txn_id': (data.get('txn_id') or data.get('utr') or '').replace('None', ''),
+            'acc_digits': str(data.get('acc_digits', '')).replace('X', '').replace('None', '').strip()[-4:]
         }
     except Exception as e:
         print(f"Gemini API Error: {e}")
