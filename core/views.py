@@ -728,11 +728,14 @@ def subscription_view(request):
     from decimal import Decimal
     
     # Active subscription for this society
-    subscription = Subscription.objects.filter(
-        society_name=request.user.society_name, 
-        is_active=True, 
-        end_date__gt=timezone.now()
-    ).first()
+    try:
+        subscription = Subscription.objects.filter(
+            society_name=request.user.society_name, 
+            is_active=True, 
+            end_date__gt=timezone.now()
+        ).first()
+    except Exception:
+        subscription = None
     
     if request.method == 'POST':
         flats_count = int(request.POST.get('flats_count', 0))

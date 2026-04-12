@@ -66,8 +66,12 @@ def delete_society(request, society_name):
     SocietyMaintenanceSettings.objects.filter(society_name=society_name).delete()
     
     # 4. Delete Subscription data if any
-    from core.models import Subscription
-    Subscription.objects.filter(society_name=society_name).delete()
+    try:
+        from core.models import Subscription
+        Subscription.objects.filter(society_name=society_name).delete()
+    except Exception:
+        # Table might not exist yet
+        pass
     
     messages.success(request, f"Successfully deleted society '{society_name}' and {deleted_count} associated accounts.")
     return redirect('company_dashboard')
