@@ -56,6 +56,9 @@ def delete_society(request, society_name):
     if request.user.role != 'company':
         return redirect('resident_dashboard')
     
+    import urllib.parse
+    society_name = urllib.parse.unquote(society_name)
+    
     # 1. CASCADE DELETE: All users associated with this society (Secretaries, Residents, Watchmen)
     deleted_count, _ = User.objects.filter(society_name=society_name).delete()
     
@@ -110,6 +113,9 @@ def societies_list(request):
 def society_detail(request, society_name):
     if request.user.role != 'company':
         return redirect('resident_dashboard')
+    
+    import urllib.parse
+    society_name = urllib.parse.unquote(society_name)
     
     # Get all owners in this society
     owners = User.objects.filter(society_name=society_name, role='resident', resident_role='owner').order_by('unit_number')
