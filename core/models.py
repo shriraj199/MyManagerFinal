@@ -189,15 +189,24 @@ class Subscription(models.Model):
         (12, '1 Year'),
     ]
     
+    STATUS_CHOICES = [
+        ('pending', 'Pending Payment'),
+        ('review', 'Under Review'),
+        ('active', 'Active'),
+        ('expired', 'Expired'),
+    ]
+    
     society_name = models.CharField(max_length=200)
     # Temporary: Use ID instead of ForeignKey to avoid CASCADE crashes while table is missing
     secretary_id = models.PositiveIntegerField(null=True, blank=True)
     plan_tier = models.CharField(max_length=20, choices=PLAN_CHOICES)
     duration_months = models.IntegerField(choices=DURATION_CHOICES)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_proof = models.ImageField(upload_to='subscription_proofs/', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField()
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     
     def __str__(self):
         return f"{self.society_name} - {self.plan_tier} ({self.duration_months}m)"
