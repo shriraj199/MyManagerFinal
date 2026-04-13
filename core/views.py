@@ -719,7 +719,7 @@ def gate_records(request):
 
 @login_required
 def subscription_view(request):
-    if request.user.role == 'company':
+    if request.user.role != 'secretary':
         return redirect('home')
     
     from .models import Subscription
@@ -743,25 +743,22 @@ def subscription_view(request):
         
         # Determine tier and rate
         if flats_count <= 250:
-            multiplier = 250
             if duration == 1: rate = 55
             elif duration == 6: rate = 45
-            else: rate = 40
+            else: rate = 40  # 12 months
             tier = '1-250'
         elif flats_count <= 500:
-            multiplier = 500
             if duration == 1: rate = 45
             elif duration == 6: rate = 35
-            else: rate = 30
+            else: rate = 30  # 12 months
             tier = '251-500'
         else:
-            multiplier = flats_count
             if duration == 1: rate = 35
             elif duration == 6: rate = 25
-            else: rate = 20
+            else: rate = 20  # 12 months
             tier = '501+'
             
-        total_amount = Decimal(multiplier) * Decimal(rate) * Decimal(duration)
+        total_amount = Decimal(flats_count) * Decimal(rate) * Decimal(duration)
         
         # Deactivate old subscriptions for this society
         Subscription.objects.filter(society_name=request.user.society_name).update(is_active=False)

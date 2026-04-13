@@ -207,7 +207,7 @@
             </a>
             {% endif %}
 
-            {% if user.role != 'company' %}
+            {% if user.role == 'secretary' %}
             {% url 'subscription_view' as sub_url %}
             <a href="{{ sub_url }}"
                 class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.path == sub_url %}bg-blue-50 text-primary font-bold shadow-sm shadow-blue-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">

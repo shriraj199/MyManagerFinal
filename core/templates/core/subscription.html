@@ -146,33 +146,29 @@
         const duration = parseInt(document.querySelector('input[name="duration"]:checked').value);
         
         let rate = 0;
-        let multiplier = 0;
         let tier = "";
 
         if (flats <= 250) {
-            multiplier = 250;
             tier = "1-250";
             if (duration === 1) rate = 55;
             else if (duration === 6) rate = 45;
             else rate = 40;
         } else if (flats <= 500) {
-            multiplier = 500;
             tier = "251-500";
             if (duration === 1) rate = 45;
             else if (duration === 6) rate = 35;
             else rate = 30;
         } else {
-            multiplier = flats;
             tier = "501+";
             if (duration === 1) rate = 35;
             else if (duration === 6) rate = 25;
             else rate = 20;
         }
 
-        const total = multiplier * rate * duration;
+        const total = flats * rate * duration;
         document.getElementById('total_display').innerText = "₹" + total.toLocaleString();
         
-        const breakdown = `Tier ${tier} • Multiplier: ${multiplier} • Rate: ₹${rate}/flat • ${duration}mo`;
+        const breakdown = `Tier ${tier} • ${flats} Flats • ₹${rate}/flat/mo • ${duration}mo`;
         document.getElementById('calc_breakdown').innerText = breakdown;
     }
 </script>
