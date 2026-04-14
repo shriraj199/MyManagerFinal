@@ -7,8 +7,8 @@
         <p class="text-sm font-medium text-muted">Manage your society's premium access</p>
     </div>
 
-    <!-- Status Cards -->
-    {% if active_subscription.status == 'active' %}
+    <!-- Active Status Card -->
+    {% if active_subscription %}
     <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-[2.5rem] shadow-xl shadow-emerald-200 mb-10 text-white relative overflow-hidden">
         <div class="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
         <div class="flex justify-between items-start mb-4">
@@ -26,48 +26,6 @@
                 <p class="font-bold">{{ active_subscription.end_date|date:"d M Y" }}</p>
             </div>
             <p class="text-2xl font-black">PRO</p>
-        </div>
-    </div>
-    {% elif active_subscription.status == 'review' %}
-    <div class="bg-amber-500 p-6 rounded-[2.5rem] shadow-xl shadow-amber-200 mb-10 text-white relative overflow-hidden text-center">
-        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i data-lucide="search" class="w-6 h-6"></i>
-        </div>
-        <h2 class="text-xl font-black uppercase italic">Under Review</h2>
-        <p class="text-xs font-medium opacity-90">We are verifying your payment. Your subscription will be activated shortly.</p>
-    </div>
-    {% elif active_subscription.status == 'pending' or show_payment_modal %}
-    <div class="bg-indigo-600 p-6 rounded-[2.5rem] shadow-xl shadow-indigo-200 mb-10 text-white text-center">
-        <h2 class="text-xl font-black uppercase italic mb-2">Payment Required</h2>
-        <p class="text-xs font-medium opacity-90 mb-6">Complete the payment to activate your {{ active_subscription.plan_tier }} plan.</p>
-        
-        <div class="bg-white rounded-3xl p-6 text-textdark mb-6">
-            <p class="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-4">Scan QR to Pay</p>
-            <!-- Placeholder for your QR Code -->
-            <div class="w-48 h-48 bg-gray-100 rounded-2xl mx-auto mb-4 border-2 border-dashed border-gray-200 flex items-center justify-center">
-                <span class="text-[10px] text-muted font-bold">[ YOUR QR CODE HERE ]</span>
-            </div>
-            <p class="text-2xl font-black tracking-tighter italic">₹{{ active_subscription.amount }}</p>
-            <p class="text-[9px] font-bold text-muted uppercase mt-1">Payable Amount</p>
-        </div>
-
-        <div class="space-y-3">
-            <a href="upi://pay?pa=mymanager@upi&pn=TheManager&am={{ active_subscription.amount }}&cu=INR&tn=Society Subscription" 
-               class="w-full bg-white text-indigo-700 py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3 active:scale-95 transition">
-                <i data-lucide="zap" class="w-5 h-5"></i> Pay with UPI App
-            </a>
-            
-            <form method="POST" enctype="multipart/form-data" class="space-y-3">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="upload_proof">
-                <input type="hidden" name="subscription_id" value="{{ active_subscription.id }}">
-                <div class="relative">
-                    <input type="file" name="payment_proof" required id="proof_upload" class="hidden" onchange="this.form.submit()">
-                    <label for="proof_upload" class="w-full bg-indigo-500/50 border border-white/20 text-white py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 cursor-pointer hover:bg-indigo-500 transition">
-                        <i data-lucide="upload" class="w-5 h-5"></i> Upload Screenshot
-                    </label>
-                </div>
-            </form>
         </div>
     </div>
     {% elif user.trial_days_left > 0 %}
@@ -94,8 +52,7 @@
     </div>
     {% endif %}
 
-    <!-- Pricing Table (only show if no active or pending sub) -->
-    {% if not active_subscription or active_subscription.status == 'expired' %}
+    <!-- Pricing Table -->
     <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden mb-10">
         <div class="bg-gray-900 px-6 py-4">
             <h3 class="text-white font-black text-xs uppercase tracking-[0.2em] text-center">Subscription Price Chart</h3>
@@ -137,7 +94,6 @@
     <!-- Selection Form -->
     <form method="POST" class="space-y-6">
         {% csrf_token %}
-        <input type="hidden" name="action" value="select_plan">
         <div class="space-y-4">
             <div>
                 <label class="text-[10px] font-black text-muted uppercase tracking-widest ml-4 mb-2 block">Actual Flat Count</label>
@@ -182,8 +138,6 @@
             Activate Subscription <i data-lucide="arrow-right" class="w-5 h-5"></i>
         </button>
     </form>
-    {% endif %}
-m>
 </div>
 
 <script>

@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse
 from django.http import HttpResponse, Http404, JsonResponse
 from django.template.loader import get_template
 from reportlab.lib.pagesizes import A4
@@ -728,79 +727,57 @@ def subscription_view(request):
     from dateutil.relativedelta import relativedelta
     from decimal import Decimal
     
-    # Active or Pending subscription for this society
-    subscription = Subscription.objects.filter(
-        society_name=request.user.society_name, 
-        status__in=['active', 'pending', 'review']
-    ).order_by('-start_date').first()
-
-    # Check if the active one has expired
-    if subscription and subscription.status == 'active' and subscription.end_date < timezone.now():
-        subscription.status = 'expired'
-        subscription.is_active = False
-        subscription.save()
+    # Active subscription for this society
+    try:
+        subscription = Subscription.objects.filter(
+            society_name=request.user.society_name, 
+            is_active=True, 
+            end_date__gt=timezone.now()
+        ).first()
+    except Exception:
         subscription = None
-
+    
     if request.method == 'POST':
-        action = request.POST.get('action')
+        flats_count = int(request.POST.get('flats_count', 0))
+        duration = int(request.POST.get('duration', 1))
         
-        if action == 'select_plan':
-            flats_count = int(request.POST.get('flats_count', 0))
-            duration = int(request.POST.get('duration', 1))
+        # Determine tier and rate
+        if flats_count <= 250:
+            if duration == 1: rate = 55
+            elif duration == 6: rate = 45
+            else: rate = 40  # 12 months
+            tier = '1-250'
+        elif flats_count <= 500:
+            if duration == 1: rate = 45
+            elif duration == 6: rate = 35
+            else: rate = 30  # 12 months
+            tier = '251-500'
+        else:
+            if duration == 1: rate = 35
+            elif duration == 6: rate = 25
+            else: rate = 20  # 12 months
+            tier = '501+'
             
-            # Determine tier and rate
-            if flats_count <= 250:
-                if duration == 1: rate = 55
-                elif duration == 6: rate = 45
-                else: rate = 40
-                tier = '1-250'
-            elif flats_count <= 500:
-                if duration == 1: rate = 45
-                elif duration == 6: rate = 35
-                else: rate = 30
-                tier = '251-500'
-            else:
-                if duration == 1: rate = 35
-                elif duration == 6: rate = 25
-                else: rate = 20
-                tier = '501+'
-                
-            total_amount = Decimal(flats_count) * Decimal(rate) * Decimal(duration)
-            
-            # Cleanup existing pending/review subs
-            Subscription.objects.filter(
-                society_name=request.user.society_name, 
-                status__in=['pending', 'review']
-            ).delete()
-            
-            # Create new subscription
-            end_date = timezone.now() + relativedelta(months=duration)
-            new_sub = Subscription.objects.create(
-                society_name=request.user.society_name or "Individual",
-                secretary_id=request.user.id,
-                plan_tier=tier,
-                duration_months=duration,
-                amount=total_amount,
-                end_date=end_date,
-                status='pending',
-                is_active=False
-            )
-            return redirect(reverse('subscription_view') + '?pay=true')
-
-        elif action == 'upload_proof':
-            proof_file = request.FILES.get('payment_proof')
-            sub_id = request.POST.get('subscription_id')
-            sub = get_object_or_404(Subscription, id=sub_id, secretary_id=request.user.id)
-            
-            if proof_file:
-                sub.payment_proof = proof_file
-                sub.status = 'review'
-                sub.save()
-                messages.success(request, "Payment proof uploaded! Your subscription will be activated once verified.")
-            return redirect('subscription_view')
+        total_amount = Decimal(flats_count) * Decimal(rate) * Decimal(duration)
+        
+        # Deactivate old subscriptions for this society
+        Subscription.objects.filter(society_name=request.user.society_name).update(is_active=False)
+        
+        # Create new subscription
+        end_date = timezone.now() + relativedelta(months=duration)
+        Subscription.objects.create(
+            society_name=request.user.society_name or "Individual",
+            secretary_id=request.user.id,
+            plan_tier=tier,
+            duration_months=duration,
+            amount=total_amount,
+            end_date=end_date,
+            is_active=True
+        )
+        
+        messages.success(request, f"Successfully subscribed to {tier} plan for {duration} month(s)!")
+        return redirect('subscription_view')
 
     return render(request, 'core/subscription.html', {
-        'active_subscription': subscription,
-        'show_payment_modal': request.GET.get('pay') == 'true'
+        'active_subscription': subscription
     })
-
