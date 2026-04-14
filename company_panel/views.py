@@ -189,6 +189,21 @@ def approve_subscription(request, subscription_id):
     return redirect('pending_subscriptions')
 
 @login_required
+def reject_subscription(request, subscription_id):
+    """Rejects a society's subscription proof."""
+    if request.user.role != 'company':
+        return redirect('home')
+    
+    from core.models import Subscription
+    sub = get_object_or_404(Subscription, id=subscription_id)
+    sub.status = 'expired'
+    sub.is_active = False
+    sub.save()
+    
+    messages.warning(request, f"Subscription for {sub.society_name} has been rejected.")
+    return redirect('pending_subscriptions')
+
+@login_required
 def dangerous_flush_database(request):
     """CRITICAL: Deletes ALL data from the database."""
     if request.user.role != 'company':

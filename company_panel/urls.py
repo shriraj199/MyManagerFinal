@@ -10,6 +10,7 @@ urlpatterns = [
     path('societies/<str:society_name>/', views.society_detail, name='society_detail'),
     path('subscriptions/', views.pending_subscriptions, name='pending_subscriptions'),
     path('subscriptions/approve/<int:subscription_id>/', views.approve_subscription, name='approve_subscription'),
+    path('subscriptions/reject/<int:subscription_id>/', views.reject_subscription, name='reject_subscription'),
     path('danger/migrate/', views.run_migrations, name='run_migrations'),
     path('danger/flush/', views.dangerous_flush_database, name='dangerous_flush'),
 ]
