@@ -34,15 +34,36 @@
         </form>
     </div>
 
-    {% if messages %}
-    <div class="mb-6">
-        {% for message in messages %}
-        <div class="p-4 mb-2 rounded-xl text-sm font-bold {% if message.tags == 'success' %}bg-green-100 text-green-700 border border-green-200{% else %}bg-red-100 text-red-700 border border-red-200{% endif %}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
     {% endif %}
+    
+    <!-- Management Links -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        <a href="{% url 'societies_list' %}" class="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-lg shadow-indigo-100 flex items-center justify-between group active:scale-[0.98] transition">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <i data-lucide="building-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest opacity-80">Directory</p>
+                    <h2 class="text-xl font-black">Managed Societies</h2>
+                </div>
+            </div>
+            <i data-lucide="arrow-right" class="w-6 h-6 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all"></i>
+        </a>
+
+        <a href="{% url 'pending_subscriptions' %}" class="bg-gray-900 p-6 rounded-[2.5rem] text-white shadow-lg shadow-gray-100 flex items-center justify-between group active:scale-[0.98] transition">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <i data-lucide="credit-card" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest opacity-80">Approvals</p>
+                    <h2 class="text-xl font-black">Subscription Requests</h2>
+                </div>
+            </div>
+            <i data-lucide="arrow-right" class="w-6 h-6 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all"></i>
+        </a>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
         <!-- Invite Codes List -->
