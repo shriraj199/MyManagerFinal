@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load static %}
 {% block content %}
 <div class="flex flex-col flex-1 max-w-lg mx-auto w-full p-6 pb-24">
     <!-- Header -->
@@ -44,16 +43,16 @@
         
         <div class="bg-white rounded-3xl p-6 text-textdark mb-6">
             <p class="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-4">Scan QR to Pay</p>
-            <!-- Your Official QR Code -->
-            <div class="bg-white rounded-2xl mx-auto mb-4 border-2 border-gray-100 overflow-hidden inline-block shadow-sm">
-                <img src="{% static 'core/img/subscription_qr.png' %}" alt="Subscription QR" class="w-48 h-auto">
+            <!-- Placeholder for your QR Code -->
+            <div class="w-48 h-48 bg-gray-100 rounded-2xl mx-auto mb-4 border-2 border-dashed border-gray-200 flex items-center justify-center">
+                <span class="text-[10px] text-muted font-bold">[ YOUR QR CODE HERE ]</span>
             </div>
             <p class="text-2xl font-black tracking-tighter italic">₹{{ active_subscription.amount }}</p>
             <p class="text-[9px] font-bold text-muted uppercase mt-1">Payable Amount</p>
         </div>
 
         <div class="space-y-3">
-            <a href="upi://pay?pa=shriraj1223shetty-1@okhdfcbank&pn=Shriraj Shetty&am={{ active_subscription.amount }}&cu=INR&tn=Society Subscription" 
+            <a href="upi://pay?pa=mymanager@upi&pn=TheManager&am={{ active_subscription.amount }}&cu=INR&tn=Society Subscription" 
                class="w-full bg-white text-indigo-700 py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3 active:scale-95 transition">
                 <i data-lucide="zap" class="w-5 h-5"></i> Pay with UPI App
             </a>
