@@ -156,6 +156,37 @@ def run_migrations(request):
     except Exception as e:
         return HttpResponse(f"<h3>Migration Failed</h3><pre>{str(e)}</pre>")
 
+@login_required
+def pending_subscriptions(request):
+    """Lists all subscriptions waiting for approval."""
+    if request.user.role != 'company':
+        return redirect('home')
+    
+    from core.models import Subscription
+    pending = Subscription.objects.filter(status__in=['pending', 'review']).order_by('-start_date')
+    
+    return render(request, 'company_panel/subscriptions.html', {
+        'pending_subscriptions': pending
+    })
+
+@login_required
+def approve_subscription(request, subscription_id):
+    """Activates a society's subscription."""
+    if request.user.role != 'company':
+        return redirect('home')
+    
+    from core.models import Subscription
+    sub = get_object_or_404(Subscription, id=subscription_id)
+    
+    # Deactivate any other active sub for this society first
+    Subscription.objects.filter(society_name=sub.society_name, is_active=True).update(is_active=False, status='expired')
+    
+    sub.status = 'active'
+    sub.is_active = True
+    sub.save()
+    
+    messages.success(request, f"Subscription for {sub.society_name} has been activated!")
+    return redirect('pending_subscriptions')
 
 @login_required
 def dangerous_flush_database(request):

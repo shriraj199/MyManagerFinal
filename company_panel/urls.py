@@ -8,6 +8,8 @@ urlpatterns = [
     path('delete_secretary/<int:secretary_id>/', views.delete_secretary, name='delete_secretary'),
     path('societies/', views.societies_list, name='societies_list'),
     path('societies/<str:society_name>/', views.society_detail, name='society_detail'),
+    path('subscriptions/', views.pending_subscriptions, name='pending_subscriptions'),
+    path('subscriptions/approve/<int:subscription_id>/', views.approve_subscription, name='approve_subscription'),
     path('danger/migrate/', views.run_migrations, name='run_migrations'),
     path('danger/flush/', views.dangerous_flush_database, name='dangerous_flush'),
 ]
