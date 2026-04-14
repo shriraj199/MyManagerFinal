@@ -48,7 +48,6 @@ class User(AbstractUser):
     # For rentals: link to their owner
     owner = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='rentals', limit_choices_to={'resident_role': 'owner'})
     has_seen_welcome = models.BooleanField(default=False)
-    is_pro_member = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.username} ({self.role})"
@@ -97,23 +96,29 @@ class User(AbstractUser):
                 
         return current_due
 
+    @property
     def is_subscription_active(self):
-        if self.role in ['company', 'secretary']:
+        if self.role == 'company':
             return True
         
-        # If the user has been individually granted Pro access by the secretary
-        if self.is_pro_member:
-            from .models import Subscription
-            from django.utils import timezone
-            # Check if there is ANY active subscription for the society
-            sub = Subscription.objects.filter(society_name=self.society_name, is_active=True, end_date__gt=timezone.now()).exists()
-            if sub:
-                return True
-            else:
-                return False
-
-        # Fallback to trial
         from django.utils import timezone
+        # If no society name (newly registered), allow 7 day trial
+        if not self.society_name:
+            diff = timezone.now() - self.date_joined
+            return diff.days < 7
+
+        # Check for active subscription for this society
+        from .models import Subscription
+        active_sub = Subscription.objects.filter(
+            society_name=self.society_name, 
+            is_active=True, 
+            end_date__gt=timezone.now()
+        ).exists()
+        
+        if active_sub:
+            return True
+            
+        # Fallback to trial based on registration date
         diff = timezone.now() - self.date_joined
         return diff.days < 7
 
