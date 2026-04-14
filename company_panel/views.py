@@ -138,25 +138,6 @@ def society_detail(request, society_name):
     })
 
 @login_required
-def run_migrations(request):
-    """Triggers database migrations from the browser."""
-    if request.user.role != 'company':
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("Unauthorized")
-    
-    from django.core.management import call_command
-    from django.http import HttpResponse
-    import io
-
-    output = io.StringIO()
-    try:
-        call_command('migrate', interactive=False, stdout=output)
-        result = output.getvalue()
-        return HttpResponse(f"<h3>Migrations Successful</h3><pre>{result}</pre><p><a href='/company/dashboard/'>Back to Dashboard</a></p>")
-    except Exception as e:
-        return HttpResponse(f"<h3>Migration Failed</h3><pre>{str(e)}</pre>")
-
-@login_required
 def dangerous_flush_database(request):
     """CRITICAL: Deletes ALL data from the database."""
     if request.user.role != 'company':
