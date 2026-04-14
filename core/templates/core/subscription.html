@@ -44,19 +44,10 @@
         
         <div class="bg-white rounded-3xl p-6 text-textdark mb-6">
             <p class="text-[10px] font-black text-muted uppercase tracking-[0.2em] mb-4">Scan QR to Pay</p>
-            
-            {% if qr_code %}
-            <!-- Dynamic Amount-Filled QR -->
-            <div class="bg-white rounded-2xl mx-auto mb-4 border-2 border-indigo-100 overflow-hidden inline-block shadow-lg">
-                <img src="data:image/png;base64,{{ qr_code }}" alt="Subscription QR" class="w-56 h-auto">
-            </div>
-            {% else %}
             <!-- Your Official QR Code -->
             <div class="bg-white rounded-2xl mx-auto mb-4 border-2 border-gray-100 overflow-hidden inline-block shadow-sm">
                 <img src="{% static 'core/img/subscription_qr.png' %}" alt="Subscription QR" class="w-48 h-auto">
             </div>
-            {% endif %}
-            
             <p class="text-2xl font-black tracking-tighter italic">₹{{ active_subscription.amount }}</p>
             <p class="text-[9px] font-bold text-muted uppercase mt-1">Payable Amount</p>
         </div>

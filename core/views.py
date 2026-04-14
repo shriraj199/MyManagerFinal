@@ -741,25 +741,6 @@ def subscription_view(request):
         subscription.save()
         subscription = None
 
-    qr_base64 = None
-    if subscription and subscription.status == 'pending':
-        import qrcode
-        import base64
-        from io import BytesIO
-        
-        upi_id = "shriraj1223shetty-1@okhdfcbank"
-        upi_name = "Shriraj Shetty"
-        upi_link = f"upi://pay?pa={upi_id}&pn={upi_name}&am={subscription.amount}&cu=INR&tn=Society Subscription"
-        
-        qr = qrcode.QRCode(version=1, box_size=10, border=2)
-        qr.add_data(upi_link)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-
     if request.method == 'POST':
         action = request.POST.get('action')
         
@@ -820,7 +801,6 @@ def subscription_view(request):
 
     return render(request, 'core/subscription.html', {
         'active_subscription': subscription,
-        'show_payment_modal': request.GET.get('pay') == 'true',
-        'qr_code': qr_base64
+        'show_payment_modal': request.GET.get('pay') == 'true'
     })
 
