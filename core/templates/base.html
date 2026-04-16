@@ -163,6 +163,11 @@
                         Maintenance
                     {% endif %}
                 </span>
+                {% if user.role == 'secretary' and pending_reviews_count > 0 %}
+                <span class="ml-auto w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {{ pending_reviews_count }}
+                </span>
+                {% endif %}
             </a>
             {% endif %}
 
