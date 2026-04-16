@@ -147,20 +147,12 @@ def members_view(request):
         
         unpaid_members = []
         for member in members:
-            pending_bills = member.bills.filter(status='Pending')
-            total = Decimal('0.00')
-            for bill in pending_bills:
-                # Dynamic late fee check (same as other views)
-                if bill.due_date and today > bill.due_date:
-                    if not bill.is_late_applied:
-                        late_fee = bill.total_amount * Decimal('0.21')
-                        bill.late_fee_amount = late_fee
-                        bill.total_amount += late_fee
-                        bill.is_late_applied = True
-                        bill.save()
-                total += bill.total_amount
+            # Shift from local calculation to the model's central logic
+            total = member.get_maintenance_balance()
+            
             member.pending_amount = total
-            member.pending_count = pending_bills.count()
+            # We still need count of pending bills for UI if needed, but balance is the key
+            member.pending_count = member.bills.filter(status='Pending').count()
             
             if total > 0:
                 unpaid_members.append(member)
@@ -347,8 +339,7 @@ def maintenance_view(request):
     
     # Context Logic
     if is_rental:
-        rental_charge = RentalChargeSettings.objects.filter(rental_user=request.user).first()
-        target_fee = rental_charge.monthly_rent if rental_charge else Decimal('0.00')
+        target_fee = request.user.get_rent_balance()
         proofs = RentPaymentProof.objects.filter(rental_user=request.user).order_by('-created_at')
         settings_obj = rental_charge
     else:
@@ -506,24 +497,29 @@ def verify_payment_proof(request, proof_id, action):
 @login_required
 def delete_payment_proof(request, proof_id):
     from .models import PaymentProof, RentPaymentProof
-    is_rental = (request.user.role == 'resident' and request.user.resident_role == 'rental')
     
-    if is_rental:
-        proof = RentPaymentProof.objects.filter(id=proof_id, rental_user=request.user).first()
-    else:
-        proof = PaymentProof.objects.filter(id=proof_id).first()
+    # Try to find in either table
+    proof = PaymentProof.objects.filter(id=proof_id).first()
+    is_rent_proof = False
+    
+    if not proof:
+        proof = RentPaymentProof.objects.filter(id=proof_id).first()
+        is_rent_proof = True
     
     if not proof:
         messages.error(request, "Proof not found.")
         return redirect('maintenance')
     
-    # Check permission: Only owner or secretary can delete
-    # For rent: only tenant or their owner
+    # Permission Check
     can_delete = False
-    if is_rental and (proof.rental_user == request.user or proof.owner == request.user):
-        can_delete = True
-    elif not is_rental and (proof.user == request.user or request.user.role == 'secretary'):
-        can_delete = True
+    if is_rent_proof:
+        # For rent: only tenant or their owner
+        if proof.rental_user == request.user or proof.owner == request.user:
+            can_delete = True
+    else:
+        # For maintenance: only the user who uploaded or secretary
+        if proof.user == request.user or request.user.role == 'secretary':
+            can_delete = True
 
     if can_delete:
         proof.delete()

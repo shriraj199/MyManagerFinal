@@ -83,18 +83,50 @@ class User(AbstractUser):
         # Check if a bill for THIS month already exists
         current_bill = Bill.objects.filter(user=self, month=month_name, year=year).first()
         
+        due_day = getattr(settings, 'due_day', 15)
+        late_fee_multi = Decimal(str(getattr(settings, 'late_fee_percentage', 21))) / 100
+        
         if current_bill:
             # If bill exists, use its total but subtract credit
             current_due = current_bill.total_amount - excess_payment
+            
+            # Apply late fee ONLY if not already applied in the Bill object and it's past due day
+            if now.day > due_day and current_due > 0 and not current_bill.is_late_applied:
+                current_due += (current_bill.maintenance_charge * late_fee_multi)
         else:
             # Ungenerated: Monthly Charge - Credit
             current_due = base_charge - excess_payment
             
-            # 3. Apply Late Fee (21%) if day > 15 and still unpaid
-            if now.day > 15 and current_due > 0:
-                current_due += (base_charge * Decimal('0.21'))
+            # Apply Late Fee if day > due_day and still unpaid
+            if now.day > due_day and current_due > 0:
+                current_due += (base_charge * late_fee_multi)
                 
         return current_due
+
+    def get_rent_balance(self):
+        """Dynamic rent balance calculation for rental users."""
+        from .models import RentalChargeSettings
+        from django.utils import timezone
+        from decimal import Decimal
+        from django.db import models
+        
+        if self.resident_role != 'rental':
+            return Decimal('0.00')
+            
+        settings = RentalChargeSettings.objects.filter(rental_user=self).first()
+        if not settings:
+            return Decimal('0.00')
+            
+        # Simplified for now: just current month's rent minus all payments made THIS month
+        now = timezone.now()
+        this_month_paid = self.rent_proofs.filter(
+            status__in=['verified', 'approved', 'flagged'],
+            created_at__month=now.month,
+            created_at__year=now.year
+        ).aggregate(models.Sum('extracted_amount'))['extracted_amount__sum'] or Decimal('0.00')
+        
+        balance = settings.monthly_rent - this_month_paid
+        return max(Decimal('0.00'), balance)
 
     def is_subscription_active(self):
         if self.role in ['company', 'secretary']:
