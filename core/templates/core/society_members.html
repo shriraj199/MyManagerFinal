@@ -48,6 +48,7 @@
     <!-- Members List -->
     <div class="bg-card border border-bordercolor rounded-3xl p-2 shadow-sm">
         {% for member in members %}
+        {% if member.resident_role != 'rental' %}
         <div class="p-4 hover:bg-gray-50 rounded-2xl transition-all border-b border-gray-100 last:border-0 flex justify-between items-center group">
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 bg-blue-50 text-primary rounded-full flex items-center justify-center font-bold text-lg">
@@ -62,8 +63,9 @@
                         {% if member.role == 'resident' %}
                             {% if member.resident_role == 'owner' %}
                             <span class="text-[9px] font-black uppercase tracking-widest bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-lg">🏠 Owner</span>
-                            {% elif member.resident_role == 'rental' %}
-                            <span class="text-[9px] font-black uppercase tracking-widest bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-lg">🔑 Rental</span>
+                            {% if member.rentals.all %}
+                            <span class="text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-lg">📦 Rented</span>
+                            {% endif %}
                             {% endif %}
                         {% endif %}
                     </p>
@@ -83,6 +85,7 @@
                 {% endif %}
             {% endif %}
         </div>
+        {% endif %}
         {% empty %}
         <div class="p-12 flex flex-col justify-center items-center text-center">
             <div class="w-16 h-16 bg-gray-50 text-muted rounded-full flex items-center justify-center mb-4">
