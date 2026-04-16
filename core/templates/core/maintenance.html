@@ -90,7 +90,7 @@
             </div>
 
             <!-- Fees Card -->
-            {% if settings %}
+            {% if settings and user.role != 'secretary' %}
             <div
                 class="bg-white border border-bordercolor rounded-[2.5rem] p-8 shadow-sm mt-8 lg:sticky lg:top-[450px]">
                 <h2 class="text-sm font-black uppercase text-primary tracking-widest mb-6 text-center">Payment Info</h2>
