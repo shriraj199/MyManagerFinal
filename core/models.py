@@ -91,16 +91,14 @@ class User(AbstractUser):
             current_due = current_bill.total_amount - excess_payment
             
             # Apply late fee ONLY if not already applied in the Bill object and it's past due day
-            # Added threshold check: only apply if significant balance (> 10.00) is pending
-            if now.day > due_day and current_due > 10 and not current_bill.is_late_applied:
-                # One more check: If they already paid at least the base charge, don't penalize small remainders
+            if now.day > due_day and current_due > 0.01 and not current_bill.is_late_applied:
                 current_due += (current_bill.maintenance_charge * late_fee_multi)
         else:
             # Ungenerated: Monthly Charge - Credit
             current_due = base_charge - excess_payment
             
-            # Apply Late Fee if day > due_day and still unpaid (significant balance > 10.00)
-            if now.day > due_day and current_due > 10:
+            # Apply Late Fee if day > due_day and still unpaid (> 0.01)
+            if now.day > due_day and current_due > 0.01:
                 current_due += (base_charge * late_fee_multi)
                 
         return current_due
