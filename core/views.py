@@ -51,6 +51,13 @@ def add_pdf_watermark(canvas, doc):
 
 User = get_user_model()
 
+def force_migrate(request):
+    from django.core.management import call_command
+    from io import StringIO
+    out = StringIO()
+    call_command('migrate', interactive=False, stdout=out)
+    return HttpResponse(f"<pre>{out.getvalue()}</pre>")
+
 @never_cache
 @csrf_protect
 def register(request):
