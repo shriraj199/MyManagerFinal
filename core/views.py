@@ -341,6 +341,7 @@ def maintenance_view(request):
     if is_rental:
         target_fee = request.user.get_rent_balance()
         proofs = RentPaymentProof.objects.filter(rental_user=request.user).order_by('-created_at')
+        rental_charge = RentalChargeSettings.objects.filter(rental_user=request.user).first()
         settings_obj = rental_charge
     else:
         maintenance_settings = SocietyMaintenanceSettings.objects.filter(society_name=society_name).first()
