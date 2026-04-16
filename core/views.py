@@ -835,7 +835,7 @@ def download_unpaid_report(request):
         return redirect('home')
 
     society_name = request.user.society_name
-    members = User.objects.filter(society_name=society_name).exclude(id=request.user.id)
+    members = User.objects.filter(society_name=society_name).exclude(resident_role='rental')
     
     from resident.models import Bill
     from decimal import Decimal
