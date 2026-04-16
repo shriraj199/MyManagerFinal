@@ -19,6 +19,32 @@
         {% endif %}
     </div>
 
+    </div>
+    
+    {% if request.user.role == 'secretary' %}
+    <!-- Tabs Navigation -->
+    <div class="flex items-center gap-1 bg-gray-100 p-1.5 rounded-2xl mb-6 w-fit">
+        <a href="?tab=all" class="px-6 py-2.5 rounded-xl text-sm font-black transition-all {% if current_tab == 'all' %}bg-white text-textdark shadow-sm{% else %}text-muted hover:text-textdark{% endif %}">
+            All Members
+        </a>
+        <a href="?tab=unpaid" class="px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2 {% if current_tab == 'unpaid' %}bg-white text-rose-600 shadow-sm{% else %}text-muted hover:text-rose-600{% endif %}">
+            Unpaid Dues
+            {% if unpaid_count > 0 %}
+            <span class="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-lg text-[10px]">{{ unpaid_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+
+    {% if current_tab == 'unpaid' %}
+    <div class="flex justify-end mb-4">
+        <a href="{% url 'download_unpaid_report' %}" class="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all">
+            <i data-lucide="file-down" class="w-4 h-4"></i>
+            Download PDF Report
+        </a>
+    </div>
+    {% endif %}
+    {% endif %}
+
     <!-- Members List -->
     <div class="bg-card border border-bordercolor rounded-3xl p-2 shadow-sm">
         {% for member in members %}

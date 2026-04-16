@@ -18,6 +18,7 @@ urlpatterns = [
     path('maintenance/verify-proof/<int:proof_id>/<str:action>/', views.verify_payment_proof, name='verify_payment_proof'),
     path('maintenance/ocr-preview/', views.process_ocr_preview, name='process_ocr_preview'),
     path('subscription/', views.subscription_view, name='subscription_view'),
+    path('members/unpaid-report/', views.download_unpaid_report, name='download_unpaid_report'),
     
     # API Endpoints
     path('api/register/', api_views.register_user, name='api_register'),

@@ -145,6 +145,7 @@ def members_view(request):
         from datetime import date
         today = date.today()
         
+        unpaid_members = []
         for member in members:
             pending_bills = member.bills.filter(status='Pending')
             total = Decimal('0.00')
@@ -160,15 +161,22 @@ def members_view(request):
                 total += bill.total_amount
             member.pending_amount = total
             member.pending_count = pending_bills.count()
+            
+            if total > 0:
+                unpaid_members.append(member)
         
         from .models import InviteCode
         invite_obj = InviteCode.objects.filter(society_name=society_name).first()
         invite_code = invite_obj.code if invite_obj else None
         
+        tab = request.GET.get('tab', 'all')
+        
         return render(request, 'core/society_members.html', {
-            'members': members, 
+            'members': members if tab == 'all' else unpaid_members, 
+            'unpaid_count': len(unpaid_members),
             'society_name': society_name,
-            'invite_code': invite_code
+            'invite_code': invite_code,
+            'current_tab': tab
         })
 
 @login_required
@@ -823,5 +831,94 @@ def subscription_view(request):
         'show_payment_modal': request.GET.get('pay') == 'true',
         'qr_code': qr_base64
     })
+
+@login_required
+def download_unpaid_report(request):
+    if request.user.role != 'secretary':
+        return redirect('home')
+
+    society_name = request.user.society_name
+    members = User.objects.filter(society_name=society_name).exclude(id=request.user.id)
+    
+    from resident.models import Bill
+    from decimal import Decimal
+    from datetime import date
+    today = date.today()
+    
+    unpaid_data = []
+    total_unpaid = Decimal('0.00')
+
+    for member in members:
+        pending_bills = member.bills.filter(status='Pending')
+        member_total = Decimal('0.00')
+        for bill in pending_bills:
+            if bill.due_date and today > bill.due_date:
+                if not bill.is_late_applied:
+                    late_fee = bill.total_amount * Decimal('0.21')
+                    bill.late_fee_amount = late_fee
+                    bill.total_amount += late_fee
+                    bill.is_late_applied = True
+                    bill.save()
+            member_total += bill.total_amount
+        
+        if member_total > 0:
+            unpaid_data.append([
+                member.unit_number or '—',
+                member.get_full_name() or member.username,
+                member.mobile_number or '—',
+                f"Rs. {member_total}"
+            ])
+            total_unpaid += member_total
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm,
+                            topMargin=2*cm, bottomMargin=2*cm)
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Title
+    title_style = ParagraphStyle('title', parent=styles['Title'], fontSize=18,
+                                  textColor=colors.HexColor('#1a1a2e'), spaceAfter=12)
+    story.append(Paragraph('MAINTENANCE DUES REPORT', title_style))
+    story.append(Paragraph(f'Society: {society_name}', styles['Normal']))
+    story.append(Paragraph(f'Date: {today.strftime("%d %B %Y")}', styles['Normal']))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Table
+    header = ['Unit No.', 'Name', 'Mobile', 'Amount Due']
+    table_data = [header] + unpaid_data
+    
+    # Add Summary Row
+    table_data.append(['', 'TOTAL DUES', '', f'Rs. {total_unpaid}'])
+
+    table = Table(table_data, colWidths=[3*cm, 7*cm, 4*cm, 4*cm])
+    table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f3f4f6')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#fafafa')]),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    story.append(table)
+
+    story.append(Spacer(1, 1*cm))
+    story.append(Paragraph('This is a system-generated summary of pending maintenance dues.', 
+                           ParagraphStyle('footer', parent=styles['Normal'], fontSize=8, 
+                                          textColor=colors.grey, alignment=TA_CENTER)))
+
+    doc.build(story, onFirstPage=add_pdf_watermark, onLaterPages=add_pdf_watermark)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="unpaid_report_{today}.pdf"'
+    response.write(pdf)
+    return response
 
 
