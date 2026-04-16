@@ -214,7 +214,7 @@
                 <i data-lucide="credit-card" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
                 <div class="flex-1 flex items-center justify-between">
                     <span class="text-sm tracking-wide">Subscription</span>
-                    {% if not user.subscriptions.exists and user.trial_days_left > 0 %}
+                    {% if user.is_on_trial %}
                     <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black uppercase rounded-lg">Trial</span>
                     {% endif %}
                 </div>

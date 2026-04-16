@@ -123,6 +123,20 @@ class User(AbstractUser):
         remaining = 7 - diff.days
         return max(0, remaining)
 
+    @property
+    def is_on_trial(self):
+        """Returns True if the society has no subscription history and is within trial period."""
+        from .models import Subscription
+        if self.role != 'secretary':
+            return False
+            
+        has_subscription = Subscription.objects.filter(
+            society_name=self.society_name,
+            status__in=['active', 'pending', 'review']
+        ).exists()
+        
+        return not has_subscription and self.trial_days_left > 0
+
 import string
 import random
 
