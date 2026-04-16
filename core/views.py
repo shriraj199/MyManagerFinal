@@ -846,17 +846,7 @@ def download_unpaid_report(request):
     total_unpaid = Decimal('0.00')
 
     for member in members:
-        pending_bills = member.bills.filter(status='Pending')
-        member_total = Decimal('0.00')
-        for bill in pending_bills:
-            if bill.due_date and today > bill.due_date:
-                if not bill.is_late_applied:
-                    late_fee = bill.total_amount * Decimal('0.21')
-                    bill.late_fee_amount = late_fee
-                    bill.total_amount += late_fee
-                    bill.is_late_applied = True
-                    bill.save()
-            member_total += bill.total_amount
+        member_total = member.get_maintenance_balance()
         
         if member_total > 0:
             unpaid_data.append([
