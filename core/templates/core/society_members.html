@@ -69,7 +69,7 @@
                     </p>
                     <p class="text-xs font-bold text-muted mt-1 uppercase tracking-widest">
                         {{ member.get_role_display }}
-                        {% if request.user.role == 'secretary' and member.role == 'resident' and member.resident_role == 'owner' and member.pending_amount > 0 %}
+                        {% if request.user.role == 'secretary' and member.role == 'resident' and member.resident_role == 'owner' and member.pending_amount > 0 and current_tab == 'unpaid' %}
                             <span class="text-rose-500 ml-2">• ₹{{ member.pending_amount }} Pending</span>
                         {% endif %}
                     </p>
