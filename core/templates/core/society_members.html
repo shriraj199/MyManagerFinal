@@ -78,18 +78,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                {% if request.user.role == 'secretary' and member.role == 'resident' %}
-                <!-- Access Toggle for Secretary -->
-                <button 
-                    onclick="toggleAccess(this, '{{ member.id }}')"
-                    class="access-toggle-btn px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all flex items-center gap-1.5
-                    {% if member.is_pro_member %}bg-green-100 text-green-700 hover:bg-green-200{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200{% endif %}"
-                    title="Toggle Subscription Access">
-                    <i data-lucide="{% if member.is_pro_member %}check-circle{% else %}circle-off{% endif %}" class="w-3.5 h-3.5"></i>
-                    <span>{% if member.is_pro_member %}Pro Active{% else %}Pro Disabled{% endif %}</span>
-                </button>
-                {% endif %}
-
                 {% if member.mobile_number %}
                     {% if request.user.role == 'secretary' or member.role == 'secretary' %}
                     <a href="tel:{{ member.mobile_number }}" class="w-10 h-10 bg-green-50 hover:bg-green-100 text-green-600 rounded-full flex items-center justify-center transition-colors shadow-sm" title="Call Member">

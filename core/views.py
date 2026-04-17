@@ -179,6 +179,42 @@ def members_view(request):
             'current_tab': tab
         })
 
+@login_required
+def pro_management(request):
+    if request.user.role != 'secretary':
+        return redirect('home')
+        
+    society_name = request.user.society_name
+    members = User.objects.filter(society_name=society_name, role='resident')
+    
+    active_pro_count = members.filter(is_pro_member=True).count()
+    
+    from .models import Subscription
+    active_sub = Subscription.objects.filter(
+        society_name=society_name, 
+        status='active'
+    ).order_by('-end_date').first()
+    
+    limit = 250
+    plan_name = "Trial / Basic"
+    if active_sub:
+        plan_name = dict(Subscription.PLAN_CHOICES).get(active_sub.plan_tier)
+        if active_sub.plan_tier == '1-250':
+            limit = 250
+        elif active_sub.plan_tier == '251-500':
+            limit = 500
+        elif active_sub.plan_tier == '501+':
+            limit = 999999
+            
+    return render(request, 'core/pro_management.html', {
+        'members': members.order_by('username'),
+        'active_pro_count': active_pro_count,
+        'limit': limit,
+        'limit_display': "Unlimited" if limit == 999999 else limit,
+        'plan_name': plan_name,
+        'society_name': society_name
+    })
+
 from django.views.decorators.csrf import csrf_exempt
 
 @login_required
@@ -189,6 +225,27 @@ def toggle_subscription_access(request, user_id):
         return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
         
     target_user = get_object_or_404(User, id=user_id, society_name=request.user.society_name)
+    
+    if not target_user.is_pro_member:
+        from .models import Subscription
+        active_sub = Subscription.objects.filter(
+            society_name=request.user.society_name, 
+            status='active'
+        ).order_by('-end_date').first()
+        
+        limit = 250
+        if active_sub:
+            if active_sub.plan_tier == '1-250':
+                limit = 250
+            elif active_sub.plan_tier == '251-500':
+                limit = 500
+            elif active_sub.plan_tier == '501+':
+                limit = 999999
+        
+        active_pro_count = User.objects.filter(society_name=request.user.society_name, is_pro_member=True, role='resident').count()
+        if active_pro_count >= limit:
+            return JsonResponse({'status': 'error', 'message': f'Subscription limit reached ({limit}). Please upgrade your plan.'})
+
     target_user.is_pro_member = not target_user.is_pro_member
     target_user.save()
     

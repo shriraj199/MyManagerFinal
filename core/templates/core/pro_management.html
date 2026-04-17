@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex flex-col flex-1 max-w-4xl mx-auto w-full p-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-2xl font-extrabold text-textdark tracking-tight">Pro Management</h1>
+            <p class="text-muted font-medium">Manage Pro access for {{ society_name }}</p>
+        </div>
+        
+        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 flex flex-col justify-center min-w-[200px]">
+            <p class="text-[10px] font-black uppercase text-emerald-600 tracking-widest mb-1 flex items-center justify-between">
+                <span>Active Plan</span>
+                <span class="bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-lg ml-2">{{ plan_name }}</span>
+            </p>
+            <div class="flex items-end gap-2">
+                <span class="text-2xl font-black text-emerald-700 leading-none" id="pro-count-display">{{ active_pro_count }}</span>
+                <span class="text-emerald-600 font-bold mb-0.5">/ {{ limit_display }} Used</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members List -->
+    <div class="bg-card border border-bordercolor rounded-3xl p-2 shadow-sm">
+        {% for member in members %}
+        {% if member.resident_role != 'rental' %}
+        <div class="p-4 hover:bg-gray-50 rounded-2xl transition-all border-b border-gray-100 last:border-0 flex justify-between items-center group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-50 text-primary rounded-full flex items-center justify-center font-bold text-lg">
+                    {{ member.first_name|default:member.username|make_list|first|upper }}
+                </div>
+                <div>
+                    <p class="text-sm font-extrabold text-textdark flex items-center gap-1.5 flex-wrap">
+                        {{ member.first_name|default:member.username }}
+                        {% if member.unit_number %}
+                        <span class="text-primary">({{ member.unit_number }})</span>
+                        {% endif %}
+                    </p>
+                    <p class="text-xs font-bold text-muted mt-1 uppercase tracking-widest">
+                        Resident
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Access Toggle for Secretary -->
+                <button 
+                    onclick="toggleAccess(this, '{{ member.id }}')"
+                    class="access-toggle-btn px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all flex items-center gap-1.5
+                    {% if member.is_pro_member %}bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-sm{% else %}bg-gray-100 text-gray-500 hover:bg-gray-200{% endif %}"
+                    title="Toggle Subscription Access">
+                    <i data-lucide="{% if member.is_pro_member %}check-circle{% else %}circle-off{% endif %}" class="w-3.5 h-3.5"></i>
+                    <span>{% if member.is_pro_member %}Pro Active{% else %}Pro Disabled{% endif %}</span>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        {% empty %}
+        <div class="p-12 flex flex-col justify-center items-center text-center">
+            <div class="w-16 h-16 bg-gray-50 text-muted rounded-full flex items-center justify-center mb-4">
+                <i data-lucide="shield-alert" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-lg font-bold text-textdark mb-2">No members yet</h3>
+            <p class="text-muted text-sm max-w-md mx-auto">Once residents join, you can manage their Pro access right here.</p>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAccess(btn, userId) {
+    // Visual feedback
+    btn.style.opacity = '0.5';
+    btn.style.pointerEvents = 'none';
+    
+    fetch(`/members/toggle-access/${userId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const isPro = data.is_pro;
+            // Update button styles and icon
+            if (isPro) {
+                btn.className = 'access-toggle-btn px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all flex items-center gap-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-sm';
+                btn.innerHTML = '<i data-lucide="check-circle" class="w-3.5 h-3.5"></i><span>Pro Active</span>';
+            } else {
+                btn.className = 'access-toggle-btn px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all flex items-center gap-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200';
+                btn.innerHTML = '<i data-lucide="circle-off" class="w-3.5 h-3.5"></i><span>Pro Disabled</span>';
+            }
+            lucide.createIcons();
+            
+            // Adjust count in the frontend UI if Limit isn't unlimited
+            const counter = document.getElementById('pro-count-display');
+            if (counter) {
+                let current = parseInt(counter.innerText);
+                counter.innerText = isPro ? (current + 1) : (current - 1);
+            }
+        } else {
+            // Show error standard via JS API or alert
+            if(window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Action Denied',
+                    text: data.message,
+                    confirmButtonColor: '#2563EB',
+                    customClass: {
+                        popup: 'rounded-[2rem]',
+                        confirmButton: 'rounded-xl px-6 py-3 text-sm font-black tracking-widest shadow-lg shadow-blue-500/20'
+                    }
+                });
+            } else {
+                alert(data.message);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update access status.');
+    })
+    .finally(() => {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+    });
+}
+</script>
+{% endblock %}

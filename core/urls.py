@@ -20,6 +20,7 @@ urlpatterns = [
     path('subscription/', views.subscription_view, name='subscription_view'),
     path('members/unpaid-report/', views.download_unpaid_report, name='download_unpaid_report'),
     path('members/toggle-access/<int:user_id>/', views.toggle_subscription_access, name='toggle_subscription_access'),
+    path('pro-management/', views.pro_management, name='pro_management'),
     path('force-migrate/', views.force_migrate),
     
     # API Endpoints

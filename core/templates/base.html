@@ -213,6 +213,15 @@
             {% endif %}
 
             {% if user.role == 'secretary' %}
+            {% url 'pro_management' as pro_url %}
+            <a href="{{ pro_url }}"
+                class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.path == pro_url %}bg-blue-50 text-emerald-600 font-bold shadow-sm shadow-emerald-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">
+                <i data-lucide="shield-check" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                <span class="text-sm tracking-wide">Pro Management</span>
+            </a>
+            {% endif %}
+
+            {% if user.role == 'secretary' %}
             {% url 'subscription_view' as sub_url %}
             <a href="{{ sub_url }}"
                 class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.path == sub_url %}bg-blue-50 text-primary font-bold shadow-sm shadow-blue-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">
