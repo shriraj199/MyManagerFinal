@@ -179,7 +179,10 @@ def members_view(request):
             'current_tab': tab
         })
 
+from django.views.decorators.csrf import csrf_exempt
+
 @login_required
+@csrf_exempt
 def toggle_subscription_access(request, user_id):
     from django.http import JsonResponse
     if request.user.role != 'secretary':
