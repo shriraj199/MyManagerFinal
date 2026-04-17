@@ -48,7 +48,6 @@ class User(AbstractUser):
     # For rentals: link to their owner
     owner = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='rentals', limit_choices_to={'resident_role': 'owner'})
     has_seen_welcome = models.BooleanField(default=False)
-    is_pro_member = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.username} ({self.role})"

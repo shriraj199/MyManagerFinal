@@ -491,33 +491,6 @@
         });
     </script>
     {% endif %}
-
-    <!-- Access Restricted Modal (for residents with disabled pro access or expired subscription) -->
-    {% if user.is_authenticated and user.role == 'resident' and not user.is_subscription_active and request.resolver_match.url_name != 'subscription_view' %}
-    <div id="access-denied-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-6">
-        <div class="bg-white rounded-[3rem] w-full max-w-lg p-10 text-center shadow-2xl animate-in zoom-in duration-300">
-            <div class="w-24 h-24 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-8">
-                <i data-lucide="shield-off" class="w-12 h-12"></i>
-            </div>
-            <h2 class="text-3xl font-black text-textdark mb-4">Access Restricted</h2>
-            <p class="text-muted font-medium mb-8 leading-relaxed">
-                Your society's pro features are currently restricted. Please contact your <span class="text-primary font-bold">Society Secretary</span> to enable access for your unit.
-            </p>
-            <div class="flex flex-col gap-4">
-                <a href="tel:{{ society_secretary.mobile_number|default:'' }}" class="bg-primary hover:bg-blue-700 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2">
-                    <i data-lucide="phone" class="w-4 h-4"></i> Call Secretary
-                </a>
-                <a href="{% url 'logout' %}" class="bg-gray-50 hover:bg-gray-100 text-muted font-bold py-4 rounded-2xl uppercase tracking-widest text-[10px] transition-all">
-                    LOGOUT
-                </a>
-            </div>
-        </div>
-    </div>
-    <script>
-        // Disable scrolls and interactions
-        document.body.style.overflow = 'hidden';
-    </script>
-    {% endif %}
 </body>
 
 </html>

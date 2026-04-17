@@ -19,7 +19,6 @@ urlpatterns = [
     path('maintenance/ocr-preview/', views.process_ocr_preview, name='process_ocr_preview'),
     path('subscription/', views.subscription_view, name='subscription_view'),
     path('members/unpaid-report/', views.download_unpaid_report, name='download_unpaid_report'),
-    path('members/toggle-access/<int:user_id>/', views.toggle_subscription_access, name='toggle_subscription_access'),
     path('force-migrate/', views.force_migrate),
     
     # API Endpoints
