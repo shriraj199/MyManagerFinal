@@ -144,9 +144,12 @@ def members_view(request):
     else:
         # Residents and Secretaries see members of their own society
         society_name = request.user.society_name
-        # Strictly only Resident Owners should be listed in the society directory/dues tracking
-        members = User.objects.filter(society_name=society_name, role='resident', resident_role='owner')
-        
+        # Include resident owners and company role members in directory/dues tracking
+        from django.db.models import Q
+        members = User.objects.filter(
+            Q(role='company') | Q(role='resident', resident_role='owner'),
+            society_name=society_name
+        )        
         # Calculate pending amounts for each member
         from resident.models import Bill
         from decimal import Decimal
@@ -919,8 +922,12 @@ def download_unpaid_report(request):
         return redirect('home')
 
     society_name = request.user.society_name
-    # Strictly only Resident Owners should be in the maintenance report
-    members = User.objects.filter(society_name=society_name, role='resident', resident_role='owner')
+    # Include resident owners and company role members in the maintenance report
+    from django.db.models import Q
+    members = User.objects.filter(
+        Q(role='company') | Q(role='resident', resident_role='owner'),
+        society_name=society_name
+    )
     
     from resident.models import Bill
     from decimal import Decimal
