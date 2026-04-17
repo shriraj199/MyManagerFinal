@@ -55,7 +55,6 @@ def force_migrate(request):
     from django.core.management import call_command
     from io import StringIO
     out = StringIO()
-    call_command('makemigrations', interactive=False, stdout=out)
     call_command('migrate', interactive=False, stdout=out)
     return HttpResponse(f"<pre>{out.getvalue()}</pre>")
 
