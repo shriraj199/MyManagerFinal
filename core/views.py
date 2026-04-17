@@ -184,7 +184,7 @@ def pro_management(request):
         return redirect('home')
         
     society_name = request.user.society_name
-    members = User.objects.filter(society_name=society_name, role='resident')
+    members = User.objects.filter(society_name=society_name, role='resident', resident_role='owner')
     
     active_pro_count = members.filter(is_pro_member=True).count()
     
