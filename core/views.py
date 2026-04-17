@@ -180,6 +180,22 @@ def members_view(request):
         })
 
 @login_required
+def toggle_subscription_access(request, user_id):
+    from django.http import JsonResponse
+    if request.user.role != 'secretary':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+        
+    target_user = get_object_or_404(User, id=user_id, society_name=request.user.society_name)
+    target_user.is_pro_member = not target_user.is_pro_member
+    target_user.save()
+    
+    return JsonResponse({
+        'status': 'success', 
+        'is_pro': target_user.is_pro_member,
+        'message': f"Access {'granted' if target_user.is_pro_member else 'revoked'} for {target_user.username}"
+    })
+
+@login_required
 def notices_view(request):
     from .models import Notice
     society_name = request.user.society_name
