@@ -190,6 +190,13 @@ def notice_delete(request, notice_id):
     messages.success(request, "Notice deleted.")
     return redirect('notices_list')
 
+@login_required
+def cashbook_view(request):
+    if request.user.role != 'secretary': return redirect('home')
+    from core.models import PaymentProof, Expense
+    from .models import Visitor
+    society_name = request.user.society_name
+    
     resident_records = PaymentProof.objects.filter(society_name=society_name, status__in=['verified', 'approved']).order_by('-created_at')
     other_records = Expense.objects.filter(society_name=society_name).order_by('-created_at')
     
