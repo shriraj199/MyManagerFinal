@@ -149,9 +149,11 @@ def calculate_account_balance(account):
     cr_total = account.journalitem_set.filter(entry_type='Cr').aggregate(Sum('amount'))['amount__sum'] or 0
     
     if account.account_type in ['Asset', 'Expense']:
-        return dr_total - cr_total, 'Dr' if dr_total >= cr_total else 'Cr'
+        diff = dr_total - cr_total
+        return abs(diff), 'Dr' if diff >= 0 else 'Cr'
     else:
-        return cr_total - dr_total, 'Cr' if cr_total >= dr_total else 'Dr'
+        diff = cr_total - dr_total
+        return abs(diff), 'Cr' if diff >= 0 else 'Dr'
 
 @login_required
 def trial_balance(request):
