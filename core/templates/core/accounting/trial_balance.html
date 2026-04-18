@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto p-4 max-w-4xl">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Trial Balance</h1>
+    
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-100 text-gray-700 text-sm uppercase font-semibold">
+                    <th class="py-4 px-6 border-b">Accounts Particulars</th>
+                    <th class="py-4 px-6 border-b text-right">Debit Balance (₹)</th>
+                    <th class="py-4 px-6 border-b text-right">Credit Balance (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in tb_data %}
+                <tr class="border-b hover:bg-gray-50 transition">
+                    <td class="py-3 px-6">{{ row.name }}</td>
+                    <td class="py-3 px-6 text-right font-medium text-gray-700">{% if row.dr > 0 %}{{ row.dr }}{% endif %}</td>
+                    <td class="py-3 px-6 text-right font-medium text-gray-700">{% if row.cr > 0 %}{{ row.cr }}{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="py-6 text-center text-gray-500">No account balances found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="bg-gray-800 text-white font-bold text-lg">
+                    <td class="py-4 px-6 text-right">Total</td>
+                    <td class="py-4 px-6 text-right">₹ {{ total_dr }}</td>
+                    <td class="py-4 px-6 text-right">₹ {{ total_cr }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -353,3 +353,45 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.payee_name} - ₹{self.amount} ({self.society_name})"
+
+from django.utils import timezone
+
+class LedgerAccount(models.Model):
+    ACCOUNT_TYPES = [
+        ('Asset', 'Asset'),
+        ('Liability', 'Liability'),
+        ('Equity', 'Equity'),
+        ('Revenue', 'Revenue'),
+        ('Expense', 'Expense'),
+    ]
+    STATEMENT_TYPES = [
+        ('Trading', 'Trading Account'),
+        ('PL', 'Profit & Loss Account'),
+        ('BalanceSheet', 'Balance Sheet'),
+    ]
+    society_name = models.CharField(max_length=200, db_index=True)
+    name = models.CharField(max_length=200) # e.g. 'Cash', 'Bank', 'Sales'
+    account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
+    statement_type = models.CharField(max_length=20, choices=STATEMENT_TYPES)
+    
+    def __str__(self):
+        return f"{self.name} ({self.society_name})"
+        
+class JournalEntry(models.Model):
+    society_name = models.CharField(max_length=200, db_index=True)
+    date = models.DateField(default=timezone.now)
+    description = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Entry {self.id} - {self.description}"
+        
+class JournalItem(models.Model):
+    entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name='items')
+    account = models.ForeignKey(LedgerAccount, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    entry_type = models.CharField(max_length=2, choices=[('Dr', 'Debit'), ('Cr', 'Credit')])
+    
+    def __str__(self):
+        return f"{self.account.name} - {self.entry_type} {self.amount}"
+

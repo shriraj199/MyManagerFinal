@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto p-4 max-w-6xl">
+    <h1 class="text-3xl font-bold mb-8 text-gray-800 text-center">Final Accounts</h1>
+    
+    <!-- TRADING ACCOUNT -->
+    <div class="mb-10 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div class="bg-blue-600 text-white p-4 text-center font-bold text-xl uppercase">Trading Account</div>
+        <div class="flex flex-col md:flex-row">
+            <div class="flex-1 border-r border-gray-200">
+                <div class="bg-gray-100 font-bold p-2 text-center border-b">Dr. Particulars</div>
+                <ul class="p-4 space-y-2">
+                    {% for item in trading_dr %}
+                    <li class="flex justify-between border-b border-gray-100 pb-1">
+                        <span>To {{ item.name }}</span>
+                        <span class="font-medium">₹{{ item.amount }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="flex-1">
+                <div class="bg-gray-100 font-bold p-2 text-center border-b">Cr. Particulars</div>
+                <ul class="p-4 space-y-2">
+                    {% for item in trading_cr %}
+                    <li class="flex justify-between border-b border-gray-100 pb-1">
+                        <span>By {{ item.name }}</span>
+                        <span class="font-medium">₹{{ item.amount }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="flex flex-col md:flex-row bg-gray-50 border-t border-gray-300 font-bold text-lg">
+            <div class="flex-1 p-4 flex justify-between border-r">
+                <span>Total</span><span>₹{{ trading_dr_total }}</span>
+            </div>
+            <div class="flex-1 p-4 flex justify-between">
+                <span>Total</span><span>₹{{ trading_cr_total }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFIT & LOSS ACCOUNT -->
+    <div class="mb-10 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div class="bg-indigo-600 text-white p-4 text-center font-bold text-xl uppercase">Profit & Loss Account</div>
+        <div class="flex flex-col md:flex-row">
+            <div class="flex-1 border-r border-gray-200">
+                <div class="bg-gray-100 font-bold p-2 text-center border-b">Dr. Particulars</div>
+                <ul class="p-4 space-y-2">
+                    {% for item in pl_dr %}
+                    <li class="flex justify-between border-b border-gray-100 pb-1">
+                        <span>To {{ item.name }}</span>
+                        <span class="font-medium">₹{{ item.amount }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="flex-1">
+                <div class="bg-gray-100 font-bold p-2 text-center border-b">Cr. Particulars</div>
+                <ul class="p-4 space-y-2">
+                    {% for item in pl_cr %}
+                    <li class="flex justify-between border-b border-gray-100 pb-1">
+                        <span>By {{ item.name }}</span>
+                        <span class="font-medium">₹{{ item.amount }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="flex flex-col md:flex-row bg-gray-50 border-t border-gray-300 font-bold text-lg">
+            <div class="flex-1 p-4 flex justify-between border-r">
+                <span>Total</span><span>₹{{ pl_dr_total }}</span>
+            </div>
+            <div class="flex-1 p-4 flex justify-between">
+                <span>Total</span><span>₹{{ pl_cr_total }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- BALANCE SHEET -->
+    <div class="mb-10 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div class="bg-green-600 text-white p-4 text-center font-bold text-xl uppercase">Balance Sheet</div>
+        <div class="flex flex-col md:flex-row">
+            <div class="flex-1 border-r border-gray-200">
+                <div class="bg-gray-100 font-bold p-2 text-center border-b">Liabilities</div>
+                <ul class="p-4 space-y-2">
+                    {% for item in bs_liab %}
+                    <li class="flex justify-between border-b border-gray-100 pb-1">
+                        <span>{{ item.name }}</span>
+                        <span class="font-medium">₹{{ item.amount }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="flex-1">
+                <div class="bg-gray-100 font-bold p-2 text-center border-b">Assets</div>
+                <ul class="p-4 space-y-2">
+                    {% for item in bs_assets %}
+                    <li class="flex justify-between border-b border-gray-100 pb-1">
+                        <span>{{ item.name }}</span>
+                        <span class="font-medium">₹{{ item.amount }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="flex flex-col md:flex-row bg-gray-50 border-t border-gray-300 font-bold text-lg">
+            <div class="flex-1 p-4 flex justify-between border-r">
+                <span>Total</span><span>₹{{ bs_liab_total }}</span>
+            </div>
+            <div class="flex-1 p-4 flex justify-between">
+                <span>Total</span><span>₹{{ bs_assets_total }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Accounting Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="{% url 'accounting_add_entry' %}" class="block p-6 bg-white rounded-lg border border-gray-200 shadow-md hover:bg-gray-100 transition duration-300">
+            <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">Add Journal Entry</h5>
+            <p class="font-normal text-gray-700">Record a new transaction to the ledger.</p>
+        </a>
+        
+        <a href="{% url 'accounting_trial_balance' %}" class="block p-6 bg-blue-50 rounded-lg border border-blue-200 shadow-md hover:bg-blue-100 transition duration-300">
+            <h5 class="mb-2 text-2xl font-bold tracking-tight text-blue-900">Trial Balance</h5>
+            <p class="font-normal text-blue-700">View the trial balance for {{ society_name }}.</p>
+        </a>
+        
+        <a href="{% url 'accounting_final_accounts' %}" class="block p-6 bg-green-50 rounded-lg border border-green-200 shadow-md hover:bg-green-100 transition duration-300">
+            <h5 class="mb-2 text-2xl font-bold tracking-tight text-green-900">Final Accounts</h5>
+            <p class="font-normal text-green-700">View Trading, Profit & Loss, and Balance Sheet.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

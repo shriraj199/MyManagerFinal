@@ -3,7 +3,7 @@ from django.urls import path
 from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 from django.views.decorators.cache import never_cache
-from . import views, api_views
+from . import views, api_views, accounting_views
 
 urlpatterns = [
     path('', views.dashboard_redirect, name='home'),
@@ -38,4 +38,10 @@ urlpatterns = [
     
     # PWA Service Worker
     path('sw.js', TemplateView.as_view(template_name='core/pwa/sw.js', content_type='application/javascript'), name='sw_js'),
+    
+    # Accounting Views
+    path('accounting/', accounting_views.accounting_dashboard, name='accounting_dashboard'),
+    path('accounting/add-entry/', accounting_views.add_journal_entry, name='accounting_add_entry'),
+    path('accounting/trial-balance/', accounting_views.trial_balance, name='accounting_trial_balance'),
+    path('accounting/final-accounts/', accounting_views.final_accounts, name='accounting_final_accounts'),
 ]
