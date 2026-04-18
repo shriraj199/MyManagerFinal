@@ -3,15 +3,29 @@ from django.contrib.auth.decorators import login_required
 from .models import LedgerAccount, JournalEntry, JournalItem
 from django.db.models import Sum
 from django.utils import timezone
+from core.models import InviteCode
+
+def get_accounting_society(request):
+    if request.user.role == 'company':
+        return request.GET.get('society')
+    return request.user.society_name
 
 @login_required
 def accounting_dashboard(request):
-    society_name = request.user.society_name
+    society_name = get_accounting_society(request)
+    
+    if request.user.role == 'company' and not society_name:
+        # Show a list of societies to the company to pick from
+        society_names = InviteCode.objects.filter(company=request.user).values_list('society_name', flat=True).distinct()
+        return render(request, 'core/accounting/company_society_select.html', {'societies': society_names})
+        
     return render(request, 'core/accounting/dashboard.html', {'society_name': society_name})
 
 @login_required
 def add_journal_entry(request):
-    society_name = request.user.society_name
+    society_name = get_accounting_society(request)
+    if request.user.role == 'company' and not society_name:
+        return redirect('accounting_dashboard')
     if request.method == 'POST':
         date = request.POST.get('date')
         description = request.POST.get('description')
@@ -48,7 +62,10 @@ def calculate_account_balance(account):
 
 @login_required
 def trial_balance(request):
-    society_name = request.user.society_name
+    society_name = get_accounting_society(request)
+    if request.user.role == 'company' and not society_name:
+        return redirect('accounting_dashboard')
+        
     accounts = LedgerAccount.objects.filter(society_name=society_name)
     
     tb_data = []
@@ -73,7 +90,10 @@ def trial_balance(request):
 
 @login_required
 def final_accounts(request):
-    society_name = request.user.society_name
+    society_name = get_accounting_society(request)
+    if request.user.role == 'company' and not society_name:
+        return redirect('accounting_dashboard')
+        
     accounts = LedgerAccount.objects.filter(society_name=society_name)
     
     trading_dr = []

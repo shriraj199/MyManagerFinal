@@ -203,6 +203,15 @@
             </a>
             {% endif %}
 
+            {% if user.role == 'company' or user.role == 'secretary' %}
+            {% url 'accounting_dashboard' as acc_dashboard_url %}
+            <a href="{{ acc_dashboard_url }}"
+                class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if 'accounting' in request.path %}bg-blue-50 text-green-600 font-bold shadow-sm shadow-green-500/10{% else %}text-muted hover:bg-gray-50 hover:text-textdark{% endif %}">
+                <i data-lucide="calculator" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
+                <span class="text-sm tracking-wide">Accounting</span>
+            </a>
+            {% endif %}
+
             {% if user.role != 'watchman' %}
             {% url 'members' as members_url %}
             <a href="{{ members_url }}"

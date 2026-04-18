@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto p-4 max-w-4xl">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Select Society for Accounting</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for s_name in societies %}
+        <a href="?society={{ s_name|urlencode }}" class="block p-6 bg-white rounded-xl shadow-md border hover:border-blue-500 hover:ring-2 ring-blue-200 transition-all">
+            <h2 class="text-xl font-bold text-gray-900">{{ s_name }}</h2>
+            <p class="text-gray-500 text-sm mt-2">Manage accounting ledgers, Trial Balance, and more.</p>
+            <div class="mt-4 text-blue-600 flex justify-end font-semibold text-sm group-hover:underline">
+                Open <i data-lucide="arrow-right" class="w-4 h-4 ml-1 inline"></i>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-full text-center p-12 bg-white rounded-xl shadow-md">
+            <h2 class="text-xl font-semibold text-gray-400">No managed societies found.</h2>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
