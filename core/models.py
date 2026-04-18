@@ -395,3 +395,55 @@ class JournalItem(models.Model):
     def __str__(self):
         return f"{self.account.name} - {self.entry_type} {self.amount}"
 
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+def get_default_accounts(society_name):
+    bank, _ = LedgerAccount.objects.get_or_create(society_name=society_name, name='Bank Account', defaults={'account_type': 'Asset', 'statement_type': 'BalanceSheet'})
+    maintenance, _ = LedgerAccount.objects.get_or_create(society_name=society_name, name='Maintenance Income', defaults={'account_type': 'Revenue', 'statement_type': 'PL'})
+    expense_acc, _ = LedgerAccount.objects.get_or_create(society_name=society_name, name='General Expenses', defaults={'account_type': 'Expense', 'statement_type': 'PL'})
+    return bank, maintenance, expense_acc
+
+@receiver(post_save, sender=Expense)
+def auto_journal_expense(sender, instance, created, **kwargs):
+    if created:
+        bank, _, expense_acc = get_default_accounts(instance.society_name)
+        ref_desc = f"New Expense: {instance.payee_name} [REF:EXP-{instance.id}]"
+        
+        entry = JournalEntry.objects.create(
+            society_name=instance.society_name,
+            description=ref_desc
+        )
+        JournalItem.objects.create(entry=entry, account=expense_acc, amount=instance.amount, entry_type='Dr')
+        JournalItem.objects.create(entry=entry, account=bank, amount=instance.amount, entry_type='Cr')
+
+@receiver(post_delete, sender=Expense)
+def delete_auto_journal_expense(sender, instance, **kwargs):
+    ref_desc = f"[REF:EXP-{instance.id}]"
+    JournalEntry.objects.filter(society_name=instance.society_name, description__endswith=ref_desc).delete()
+
+@receiver(post_save, sender=PaymentProof)
+def auto_journal_payment(sender, instance, created, **kwargs):
+    ref_desc = f"Maintenance Receipt [REF:PAY-{instance.id}]"
+    
+    if instance.status in ['verified', 'approved']:
+        if not JournalEntry.objects.filter(description__endswith=ref_desc).exists():
+            bank, maintenance, _ = get_default_accounts(instance.society_name)
+            amount = instance.extracted_amount if instance.extracted_amount else 0
+            if amount > 0:
+                entry = JournalEntry.objects.create(
+                    society_name=instance.society_name,
+                    description=ref_desc
+                )
+                JournalItem.objects.create(entry=entry, account=bank, amount=amount, entry_type='Dr')
+                JournalItem.objects.create(entry=entry, account=maintenance, amount=amount, entry_type='Cr')
+    else:
+        # If status changed back to pending/rejected, remove entry
+        JournalEntry.objects.filter(society_name=instance.society_name, description__endswith=ref_desc).delete()
+
+@receiver(post_delete, sender=PaymentProof)
+def delete_auto_journal_payment(sender, instance, **kwargs):
+    ref_desc = f"[REF:PAY-{instance.id}]"
+    JournalEntry.objects.filter(society_name=instance.society_name, description__endswith=ref_desc).delete()
+
+

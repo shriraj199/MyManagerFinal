@@ -19,5 +19,35 @@
             <p class="font-normal text-green-700">View Trading, Profit & Loss, and Balance Sheet.</p>
         </a>
     </div>
+
+    <div class="mt-8 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div class="p-4 bg-gray-50 border-b border-gray-200 uppercase font-bold text-gray-700">Recent Journal Entries</div>
+        <table class="w-full text-left border-collapse text-sm">
+            <thead>
+                <tr class="bg-gray-100 text-gray-600">
+                    <th class="py-3 px-4 border-b">ID</th>
+                    <th class="py-3 px-4 border-b">Date</th>
+                    <th class="py-3 px-4 border-b">Description</th>
+                    <th class="py-3 px-4 border-b text-right">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in recent_entries %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-4">#{{ entry.id }}</td>
+                    <td class="py-3 px-4">{{ entry.date|date:"M d, Y" }}</td>
+                    <td class="py-3 px-4 text-gray-800">{{ entry.description }}</td>
+                    <td class="py-3 px-4 text-right">
+                        <a href="{% url 'accounting_delete_entry' entry.id %}{% if request.GET.society %}?society={{ request.GET.society|urlencode }}{% endif %}" onclick="return confirm('Are you sure you want to delete this entry? It will undo its effect across all accounts.');" class="text-rose-500 hover:text-rose-700 font-bold p-2"><i data-lucide="trash-2" class="w-5 h-5 inline"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="py-6 text-center text-gray-500">No journal entries recorded recently.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

@@ -19,7 +19,26 @@ def accounting_dashboard(request):
         society_names = InviteCode.objects.filter(company=request.user).values_list('society_name', flat=True).distinct()
         return render(request, 'core/accounting/company_society_select.html', {'societies': society_names})
         
-    return render(request, 'core/accounting/dashboard.html', {'society_name': society_name})
+    recent_entries = JournalEntry.objects.filter(society_name=society_name).order_by('-created_at')[:20]
+    return render(request, 'core/accounting/dashboard.html', {
+        'society_name': society_name,
+        'recent_entries': recent_entries
+    })
+
+@login_required
+def delete_journal_entry(request, entry_id):
+    society_name = get_accounting_society(request)
+    if not society_name:
+        return redirect('home')
+        
+    entry = JournalEntry.objects.filter(id=entry_id, society_name=society_name).first()
+    if entry:
+        entry.delete()
+        
+    url = '/accounting/'
+    if request.user.role == 'company' and request.GET.get('society'):
+        url += f"?society={request.GET.get('society')}"
+    return redirect(url)
 
 @login_required
 def add_journal_entry(request):

@@ -42,6 +42,7 @@ urlpatterns = [
     # Accounting Views
     path('accounting/', accounting_views.accounting_dashboard, name='accounting_dashboard'),
     path('accounting/add-entry/', accounting_views.add_journal_entry, name='accounting_add_entry'),
+    path('accounting/delete-entry/<int:entry_id>/', accounting_views.delete_journal_entry, name='accounting_delete_entry'),
     path('accounting/trial-balance/', accounting_views.trial_balance, name='accounting_trial_balance'),
     path('accounting/final-accounts/', accounting_views.final_accounts, name='accounting_final_accounts'),
 ]
