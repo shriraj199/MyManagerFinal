@@ -14,10 +14,15 @@
             </thead>
             <tbody>
                 {% for row in tb_data %}
-                <tr class="border-b hover:bg-gray-50 transition">
-                    <td class="py-3 px-6">{{ row.name }}</td>
-                    <td class="py-3 px-6 text-right font-medium text-gray-700">{% if row.dr > 0 %}{{ row.dr }}{% endif %}</td>
-                    <td class="py-3 px-6 text-right font-medium text-gray-700">{% if row.cr > 0 %}{{ row.cr }}{% endif %}</td>
+                <tr class="border-b hover:bg-blue-50/50 transition cursor-pointer group">
+                    <td class="py-3 px-6">
+                        <a href="{% url 'accounting_account_ledger' row.id %}{% if request.GET.society %}?society={{ request.GET.society|urlencode }}{% endif %}" class="flex items-center gap-2 text-gray-900 group-hover:text-primary transition-colors">
+                            <span class="font-semibold">{{ row.name }}</span>
+                            <i data-lucide="external-link" class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </a>
+                    </td>
+                    <td class="py-3 px-6 text-right font-medium text-gray-700">{% if row.dr > 0 %}₹ {{ row.dr }}{% endif %}</td>
+                    <td class="py-3 px-6 text-right font-medium text-gray-700">{% if row.cr > 0 %}₹ {{ row.cr }}{% endif %}</td>
                 </tr>
                 {% empty %}
                 <tr>

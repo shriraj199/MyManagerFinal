@@ -20,10 +20,84 @@ def accounting_dashboard(request):
         return render(request, 'core/accounting/company_society_select.html', {'societies': society_names})
         
     recent_entries = JournalEntry.objects.filter(society_name=society_name).order_by('-created_at')[:20]
+    accounts_count = LedgerAccount.objects.filter(society_name=society_name).count()
+    
     return render(request, 'core/accounting/dashboard.html', {
         'society_name': society_name,
-        'recent_entries': recent_entries
+        'recent_entries': recent_entries,
+        'accounts_count': accounts_count
     })
+
+@login_required
+def setup_default_accounts(request):
+    society_name = get_accounting_society(request)
+    if not society_name:
+        return redirect('accounting_dashboard')
+        
+    defaults = [
+        # Trading Dr
+        ('Opening Stock', 'Asset', 'Trading'),
+        ('Purchases', 'Expense', 'Trading'),
+        ('Wages', 'Expense', 'Trading'),
+        ('Direct Expenses', 'Expense', 'Trading'),
+        ('Freight & Carriage Inward', 'Expense', 'Trading'),
+        ('Custom Duty', 'Expense', 'Trading'),
+        ('Coal, Gas, Fuel etc.', 'Expense', 'Trading'),
+        ('Royalties', 'Expense', 'Trading'),
+        ('Factory expenses', 'Expense', 'Trading'),
+        # Trading Cr
+        ('Sales', 'Revenue', 'Trading'),
+        ('Closing Stock', 'Asset', 'Trading'),
+        
+        # P&L Dr
+        ('Salaries & Wages', 'Expense', 'PL'),
+        ('Rent Rates & Taxes', 'Expense', 'PL'),
+        ('Insurance', 'Expense', 'PL'),
+        ('Bank Charges', 'Expense', 'PL'),
+        ('Discount Allowed', 'Expense', 'PL'),
+        ('Audit fees', 'Expense', 'PL'),
+        ('Depreciation', 'Expense', 'PL'),
+        ('Travelling expenses', 'Expense', 'PL'),
+        ('Advertisement', 'Expense', 'PL'),
+        ('Printing & Stationery', 'Expense', 'PL'),
+        ('Interest Paid', 'Expense', 'PL'),
+        ('General Expenses', 'Expense', 'PL'),
+        # P&L Cr
+        ('Rent received', 'Revenue', 'PL'),
+        ('Commission received', 'Revenue', 'PL'),
+        ('Interest on Investment', 'Revenue', 'PL'),
+        ('Discount received', 'Revenue', 'PL'),
+        
+        # Balance Sheet Assets
+        ('Cash in hand', 'Asset', 'BalanceSheet'),
+        ('Bank Account', 'Asset', 'BalanceSheet'),
+        ('Bills Receivable', 'Asset', 'BalanceSheet'),
+        ('Sundry Debtors', 'Asset', 'BalanceSheet'),
+        ('Goodwill', 'Asset', 'BalanceSheet'),
+        ('Furniture', 'Asset', 'BalanceSheet'),
+        ('Plant & Machinery', 'Asset', 'BalanceSheet'),
+        ('Land & Building', 'Asset', 'BalanceSheet'),
+        ('Prepaid expenses', 'Asset', 'BalanceSheet'),
+        # Balance Sheet Liab
+        ('Capital', 'Equity', 'BalanceSheet'),
+        ('Drawings', 'Equity', 'BalanceSheet'),
+        ('Bank Loan', 'Liability', 'BalanceSheet'),
+        ('Sundry Creditors', 'Liability', 'BalanceSheet'),
+        ('Bills Payable', 'Liability', 'BalanceSheet'),
+    ]
+    
+    for name, acc_type, stmt_type in defaults:
+        LedgerAccount.objects.get_or_create(
+            society_name=society_name,
+            name=name,
+            defaults={'account_type': acc_type, 'statement_type': stmt_type}
+        )
+        
+    url = '/accounting/'
+    if request.user.role == 'company' and request.GET.get('society'):
+        url += f"?society={request.GET.get('society')}"
+    return redirect(url)
+
 
 @login_required
 def delete_journal_entry(request, entry_id):
@@ -95,17 +169,57 @@ def trial_balance(request):
         bal, bal_type = calculate_account_balance(acc)
         if bal != 0:
             if bal_type == 'Dr':
-                tb_data.append({'name': acc.name, 'dr': bal, 'cr': 0})
+                tb_data.append({'id': acc.id, 'name': acc.name, 'dr': bal, 'cr': 0})
                 total_dr += bal
             else:
-                tb_data.append({'name': acc.name, 'dr': 0, 'cr': bal})
+                tb_data.append({'id': acc.id, 'name': acc.name, 'dr': 0, 'cr': bal})
                 total_cr += bal
                 
     return render(request, 'core/accounting/trial_balance.html', {
         'tb_data': tb_data,
         'total_dr': total_dr,
-        'total_cr': total_cr
+        'total_cr': total_cr,
+        'society_name': society_name
     })
+
+@login_required
+def account_ledger(request, account_id):
+    society_name = get_accounting_society(request)
+    if not society_name:
+        return redirect('accounting_dashboard')
+        
+    account = get_object_or_404(LedgerAccount, id=account_id, society_name=society_name)
+    items = JournalItem.objects.filter(account=account).select_related('entry').order_by('entry__date', 'entry__created_at')
+    
+    # Calculate running balance
+    ledger_entries = []
+    running_balance = 0
+    for item in items:
+        if account.account_type in ['Asset', 'Expense']:
+            if item.entry_type == 'Dr':
+                running_balance += item.amount
+            else:
+                running_balance -= item.amount
+        else:
+            if item.entry_type == 'Cr':
+                running_balance += item.amount
+            else:
+                running_balance -= item.amount
+        
+        ledger_entries.append({
+            'date': item.entry.date,
+            'description': item.entry.description,
+            'entry_type': item.entry_type,
+            'amount': item.amount,
+            'balance': running_balance
+        })
+
+    return render(request, 'core/accounting/account_ledger.html', {
+        'account': account,
+        'ledger_entries': ledger_entries,
+        'society_name': society_name
+    })
+
 
 @login_required
 def final_accounts(request):
