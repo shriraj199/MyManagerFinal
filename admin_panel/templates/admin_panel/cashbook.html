@@ -12,6 +12,33 @@
         </div>
     </div>
 
+    <!-- Financial Summary Cards -->
+    <div class="grid grid-cols-2 gap-4 mb-8">
+        <div class="bg-emerald-50 p-5 rounded-[2rem] border border-emerald-100 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <span class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Maintenance</span>
+            </div>
+            <h2 class="text-2xl font-black text-emerald-700 tracking-tight">₹{{ total_income }}</h2>
+        </div>
+        <div class="bg-rose-50 p-5 rounded-[2rem] border border-rose-100 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-2 h-2 rounded-full bg-rose-400"></div>
+                <span class="text-[9px] font-black text-rose-600 uppercase tracking-widest">Expenses</span>
+            </div>
+            <h2 class="text-2xl font-black text-rose-700 tracking-tight">₹{{ total_expenses }}</h2>
+        </div>
+        <div class="col-span-2 bg-gray-900 p-6 rounded-[2.5rem] shadow-xl shadow-gray-900/10 text-white relative overflow-hidden group">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-700"></div>
+            <span class="relative z-10 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 block">Remaining Balance</span>
+            <div class="relative z-10 flex items-baseline gap-1.5">
+                <span class="text-sm font-bold text-gray-500">₹</span>
+                <h2 class="text-4xl font-black tracking-tighter">{{ remaining_balance }}</h2>
+            </div>
+            <p class="relative z-10 text-[8px] font-bold text-emerald-400/80 uppercase tracking-widest mt-2">Available for Society Expenses</p>
+        </div>
+    </div>
+
     <!-- Tab Buttons -->
     <div class="flex bg-white p-1.5 rounded-[2rem] border border-bordercolor shadow-sm mb-10 overflow-hidden" id="cashbook-tabs">
         <button onclick="switchTab('resident')" id="tab-resident" class="flex-1 py-4 px-6 rounded-[1.6rem] text-xs font-black uppercase tracking-widest transition-all bg-primary text-white shadow-lg shadow-primary/20">
