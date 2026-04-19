@@ -48,4 +48,5 @@ urlpatterns = [
     path('accounting/ledger/<int:account_id>/', accounting_views.account_ledger, name='accounting_account_ledger'),
     path('accounting/final-accounts/', accounting_views.final_accounts, name='accounting_final_accounts'),
     path('accounting/full-report/', accounting_views.full_accounting_report, name='accounting_full_report'),
+    path('accounting/full-report/download/', accounting_views.download_report_pdf, name='accounting_download_report_pdf'),
 ]

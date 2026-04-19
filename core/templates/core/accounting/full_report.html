@@ -8,11 +8,15 @@
             <h1 class="text-4xl font-black text-gray-900 tracking-tighter">Financial Statement</h1>
             <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px]">{{ society_name }} &bull; Financial Year 2023-24</p>
         </div>
-        <div class="text-right">
+        <div class="text-right flex flex-col items-end gap-2">
             <button onclick="downloadPDF()" data-html2canvas-ignore="true" class="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 no-print">
                 <i data-lucide="download" class="w-4 h-4"></i> Download PDF
             </button>
-            <p class="text-[10px] text-gray-400 mt-2 font-bold no-print italic" data-html2canvas-ignore="true">Click to export all statements</p>
+            <!-- Direct Download for APK Users -->
+            <a href="{% url 'accounting_download_report_pdf' %}" data-html2canvas-ignore="true" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 no-print">
+                <i data-lucide="smartphone" class="w-4 h-4"></i> Direct Download (APK)
+            </a>
+            <p class="text-[10px] text-gray-400 mt-1 font-bold no-print italic" data-html2canvas-ignore="true">Use "Direct Download" if you are on the mobile app</p>
         </div>
     </div>
 

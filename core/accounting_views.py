@@ -342,11 +342,18 @@ def full_accounting_report(request):
     pl_dr = []; pl_cr = []
     pl_dr_total = 0; pl_cr_total = 0
     bs_assets = []; bs_liabilities = []
-    bs_assets_total = 0; bs_liab_total = 0
-
+    bs_assets_total = bs_liab_total = 0
+    
     for acc in accounts:
-        bal, bal_type = calculate_account_balance(acc)
+        bal = acc.get_balance()
         if bal == 0: continue
+            
+        bal_type = 'Dr' if bal > 0 else 'Cr'
+        bal = abs(bal)
+        
+        tb_data.append({'name': acc.name, 'dr': bal if bal_type == 'Dr' else 0, 'cr': bal if bal_type == 'Cr' else 0})
+        if bal_type == 'Dr': total_dr += bal
+        else: total_cr += bal
         
         if acc.statement_type == 'Trading':
             if bal_type == 'Dr':
@@ -370,7 +377,6 @@ def full_accounting_report(request):
                 bs_liabilities.append({'name': acc.name, 'amount': bal})
                 bs_liab_total += bal
 
-    # Calculation logic for Profit/Loss
     gross_profit = max(0, trading_cr_total - trading_dr_total)
     gross_loss = max(0, trading_dr_total - trading_cr_total)
     
@@ -380,11 +386,9 @@ def full_accounting_report(request):
     net_profit = max(0, pl_cr_total_adjusted - pl_dr_total_adjusted)
     net_loss = max(0, pl_dr_total_adjusted - pl_cr_total_adjusted)
     
-    # --- JOURNAL ENTRIES ---
-    # Fetching all entries linked to this society, prefetching items and accounts for performance
     journal_entries = JournalEntry.objects.filter(society_name=society_name).order_by('date', 'id').prefetch_related('items__account')
 
-    return render(request, 'core/accounting/full_report.html', {
+    return {
         'journal_entries': journal_entries,
         'tb_data': tb_data, 'total_dr': total_dr, 'total_cr': total_cr,
         'trading_dr': trading_dr, 'trading_cr': trading_cr,
@@ -396,4 +400,88 @@ def full_accounting_report(request):
         'bs_assets': bs_assets, 'bs_liabilities': bs_liabilities,
         'bs_assets_total': bs_assets_total, 'bs_liab_total': bs_liab_total,
         'society_name': society_name
-    })
+    }
+
+@login_required
+def full_accounting_report(request):
+    if request.user.role not in ['secretary', 'company']:
+        return redirect('home')
+    society_name = request.user.society_name
+    data = get_accounting_data(society_name)
+    return render(request, 'core/accounting/full_report.html', data)
+
+@login_required
+def download_report_pdf(request):
+    """Server-side PDF generation for APK/Mobile compatibility."""
+    if request.user.role not in ['secretary', 'company']:
+        return HttpResponse("Unauthorized", status=403)
+        
+    society_name = request.user.society_name
+    data = get_accounting_data(society_name)
+    
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from .views import add_pdf_watermark
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Header
+    title_style = ParagraphStyle('Title', parent=styles['Title'], fontSize=18, spaceAfter=20)
+    story.append(Paragraph(f"Financial Report - {society_name}", title_style))
+    story.append(Paragraph(f"Year: 2023-24 | Generated: {date.today()}", styles['Normal']))
+    story.append(Spacer(1, 1*cm))
+    
+    # 1. Trial Balance
+    story.append(Paragraph("1. Trial Balance", styles['Heading2']))
+    tb_table_data = [['Particulars', 'Debit (Rs)', 'Credit (Rs)']]
+    for row in data['tb_data']:
+        tb_table_data.append([row['name'], f"{row['dr']:.2f}" if row['dr'] else '0.00', f"{row['cr']:.2f}" if row['cr'] else '0.00'])
+    tb_table_data.append(['Total', f"{data['total_dr']:.2f}", f"{data['total_cr']:.2f}"])
+    
+    t = Table(tb_table_data, colWidths=[10*cm, 4*cm, 4*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (1,0), (-1,-1), 'RIGHT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
+    ]))
+    story.append(t)
+    story.append(PageBreak())
+    
+    # 2. Profit & Loss (Simplified for PDF)
+    story.append(Paragraph("2. Profit & Loss Account", styles['Heading2']))
+    pl_data = [['Debit Particulars', 'Amount', 'Credit Particulars', 'Amount']]
+    # Interleave PL data
+    max_len = max(len(data['pl_dr']), len(data['pl_cr']))
+    for i in range(max_len):
+        dr = data['pl_dr'][i] if i < len(data['pl_dr']) else {'name': '', 'amount': ''}
+        cr = data['pl_cr'][i] if i < len(data['pl_cr']) else {'name': '', 'amount': ''}
+        pl_data.append([dr['name'], dr['amount'], cr['name'], cr['amount']])
+    
+    pl_t = Table(pl_data, colWidths=[5*cm, 3*cm, 5*cm, 3*cm])
+    pl_t.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+        ('ALIGN', (3,0), (3,-1), 'RIGHT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+    ]))
+    story.append(pl_t)
+    
+    story.append(Spacer(1, 1*cm))
+    story.append(Paragraph(f"Net Profit: Rs. {data['net_profit']:.2f}", styles['Normal']))
+    
+    doc.build(story, onFirstPage=add_pdf_watermark, onLaterPages=add_pdf_watermark)
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Full_Report_{society_name}.pdf"'
+    response.write(buffer.getvalue())
+    return response
