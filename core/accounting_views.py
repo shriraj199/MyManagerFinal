@@ -427,8 +427,31 @@ def download_report_pdf(request):
     story.append(Paragraph(f"Year: 2023-24 | Generated: {date.today()}", styles['Normal']))
     story.append(Spacer(1, 1*cm))
     
-    # 1. Trial Balance
-    story.append(Paragraph("1. Trial Balance", styles['Heading2']))
+    # 1. Journal Register
+    story.append(Paragraph("1. Journal Register", styles['Heading2']))
+    journal_data = [['Date', 'Description', 'Account', 'Dr', 'Cr']]
+    for entry in data['journal_entries']:
+        for item in entry.items.all():
+            journal_data.append([
+                entry.date.strftime('%d-%m-%Y'),
+                entry.description,
+                item.account.name,
+                f"{item.amount:.2f}" if item.entry_type == 'Dr' else '',
+                f"{item.amount:.2f}" if item.entry_type == 'Cr' else ''
+            ])
+    
+    jt = Table(journal_data, colWidths=[2.5*cm, 6*cm, 5*cm, 2*cm, 2*cm])
+    jt.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+    ]))
+    story.append(jt)
+    story.append(PageBreak())
+
+    # 2. Trial Balance
+    story.append(Paragraph("2. Trial Balance", styles['Heading2']))
     tb_table_data = [['Particulars', 'Debit (Rs)', 'Credit (Rs)']]
     for row in data['tb_data']:
         tb_table_data.append([row['name'], f"{row['dr']:.2f}" if row['dr'] else '0.00', f"{row['cr']:.2f}" if row['cr'] else '0.00'])
@@ -441,32 +464,61 @@ def download_report_pdf(request):
         ('ALIGN', (1,0), (-1,-1), 'RIGHT'),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
     ]))
     story.append(t)
     story.append(PageBreak())
     
-    # 2. Profit & Loss (Simplified for PDF)
-    story.append(Paragraph("2. Profit & Loss Account", styles['Heading2']))
-    pl_data = [['Debit Particulars', 'Amount', 'Credit Particulars', 'Amount']]
-    # Interleave PL data
-    max_len = max(len(data['pl_dr']), len(data['pl_cr']))
-    for i in range(max_len):
+    # 3. Trading & PL Account
+    story.append(Paragraph("3. Trading & Profit & Loss Account", styles['Heading2']))
+    # Trading Data
+    trading_data = [['Debit Particulars', 'Amount', 'Credit Particulars', 'Amount']]
+    max_t = max(len(data['trading_dr']), len(data['trading_cr']))
+    for i in range(max_t):
+        dr = data['trading_dr'][i] if i < len(data['trading_dr']) else {'name': '', 'amount': ''}
+        cr = data['trading_cr'][i] if i < len(data['trading_cr']) else {'name': '', 'amount': ''}
+        trading_data.append([dr['name'], dr['amount'], cr['name'], cr['amount']])
+    
+    t_table = Table(trading_data, colWidths=[5*cm, 3*cm, 5*cm, 3*cm])
+    t_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+    ]))
+    story.append(t_table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # PL Data
+    pl_data = [['Debit (Expenses)', 'Amount', 'Credit (Incomes)', 'Amount']]
+    max_pl = max(len(data['pl_dr']), len(data['pl_cr']))
+    for i in range(max_pl):
         dr = data['pl_dr'][i] if i < len(data['pl_dr']) else {'name': '', 'amount': ''}
         cr = data['pl_cr'][i] if i < len(data['pl_cr']) else {'name': '', 'amount': ''}
         pl_data.append([dr['name'], dr['amount'], cr['name'], cr['amount']])
     
-    pl_t = Table(pl_data, colWidths=[5*cm, 3*cm, 5*cm, 3*cm])
-    pl_t.setStyle(TableStyle([
+    pl_table = Table(pl_data, colWidths=[5*cm, 3*cm, 5*cm, 3*cm])
+    pl_table.setStyle(TableStyle([
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-        ('ALIGN', (1,0), (1,-1), 'RIGHT'),
-        ('ALIGN', (3,0), (3,-1), 'RIGHT'),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
     ]))
-    story.append(pl_t)
-    
-    story.append(Spacer(1, 1*cm))
+    story.append(pl_table)
     story.append(Paragraph(f"Net Profit: Rs. {data['net_profit']:.2f}", styles['Normal']))
+    story.append(PageBreak())
+
+    # 4. Balance Sheet
+    story.append(Paragraph("4. Balance Sheet", styles['Heading2']))
+    bs_data = [['Liabilities', 'Amount', 'Assets', 'Amount']]
+    max_bs = max(len(data['bs_liabilities']), len(data['bs_assets']))
+    for i in range(max_bs):
+        liab = data['bs_liabilities'][i] if i < len(data['bs_liabilities']) else {'name': '', 'amount': ''}
+        asset = data['bs_assets'][i] if i < len(data['bs_assets']) else {'name': '', 'amount': ''}
+        bs_data.append([liab['name'], liab['amount'], asset['name'], asset['amount']])
+    
+    bs_table = Table(bs_data, colWidths=[5*cm, 3*cm, 5*cm, 3*cm])
+    bs_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.whitesmoke),
+    ]))
+    story.append(bs_table)
     
     doc.build(story, onFirstPage=add_pdf_watermark, onLaterPages=add_pdf_watermark)
     
