@@ -1,16 +1,21 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mx-auto p-4 max-w-5xl" id="report-content">
+<div class="container mx-auto p-4 max-w-5xl relative" id="report-content">
+    <!-- Background Watermark Logo -->
+    <div class="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none -z-10 overflow-hidden">
+        <img src="{% static 'core/pwa/logo.png' %}" class="w-[600px] h-[600px] object-contain rotate-[-15deg]">
+    </div>
+
     <div class="flex items-center justify-between mb-10 pb-6 border-b-2 border-gray-100">
         <div>
             <h1 class="text-4xl font-black text-gray-900 tracking-tighter">Financial Statement</h1>
             <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px]">{{ society_name }} &bull; Financial Year 2023-24</p>
         </div>
         <div class="text-right">
-            <button onclick="downloadPDF()" class="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 no-print">
+            <button onclick="downloadPDF()" data-html2canvas-ignore="true" class="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 no-print">
                 <i data-lucide="download" class="w-4 h-4"></i> Download PDF
             </button>
-            <p class="text-[10px] text-gray-400 mt-2 font-bold no-print italic">Click to export all statements</p>
+            <p class="text-[10px] text-gray-400 mt-2 font-bold no-print italic" data-html2canvas-ignore="true">Click to export all statements</p>
         </div>
     </div>
 
