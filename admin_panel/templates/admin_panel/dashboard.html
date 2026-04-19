@@ -83,28 +83,29 @@
     </div>
 
     <script>
-        function copyWatchmanInvite() {
+        async function copyWatchmanInvite() {
             const inviteCode = "{{ invite_code }}";
             const baseUrl = window.location.origin;
             const inviteUrl = `${baseUrl}/register/?role=watchman&invite_code=${inviteCode}`;
             
-            navigator.clipboard.writeText(inviteUrl).then(() => {
-                const status = document.getElementById('invite-status');
-                const subtext = document.getElementById('invite-subtext');
-                const icon = document.getElementById('copy-icon');
-                
-                status.textContent = "COPIED!";
-                status.classList.add('text-emerald-600');
-                subtext.textContent = "Ready to Paste";
-                icon.classList.replace('text-gray-300', 'text-emerald-600');
-                
-                setTimeout(() => {
-                    status.textContent = "Invite Watchman";
-                    status.classList.remove('text-emerald-600');
-                    subtext.textContent = "Copy Registration Link";
-                    icon.classList.replace('text-emerald-600', 'text-gray-300');
-                }, 2000);
-            });
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Watchman Invite - TheManager',
+                        text: 'You have been invited as a watchman for {{ user.society_name }}. Click here to register:',
+                        url: inviteUrl,
+                    });
+                } catch (err) {
+                    console.error("Share failed:", err);
+                }
+            } else {
+                // Fallback to clipboard if sharing is not supported (e.g. desktop)
+                navigator.clipboard.writeText(inviteUrl).then(() => {
+                    const status = document.getElementById('invite-status');
+                    status.textContent = "LINK COPIED!";
+                    setTimeout(() => { status.textContent = "Invite Watchman"; }, 2000);
+                });
+            }
         }
     </script>
 </div>

@@ -101,14 +101,25 @@
 </div>
 
 <script>
-function copyInviteLink(code) {
+async function copyInviteLink(code) {
     const url = window.location.origin + "{% url 'register' %}?invite_code=" + code;
-    navigator.clipboard.writeText(url).then(function() {
-        alert("Invite link copied to clipboard!");
-    }, function(err) {
-        console.error('Async: Could not copy text: ', err);
-        alert("Invite Code is: " + code);
-    });
+    
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Society Join Invite',
+                text: 'Join our society on TheManager app. Click here to register:',
+                url: url,
+            });
+        } catch (err) {
+            console.error("Share failed:", err);
+        }
+    } else {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(url).then(function() {
+            alert("Invite link copied to clipboard!");
+        });
+    }
 }
 </script>
 {% endblock %}
