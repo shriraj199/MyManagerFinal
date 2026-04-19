@@ -381,7 +381,8 @@ def full_accounting_report(request):
     net_loss = max(0, pl_dr_total_adjusted - pl_cr_total_adjusted)
     
     # --- JOURNAL ENTRIES ---
-    journal_entries = JournalEntry.objects.filter(society_name=society_name).order_by('date', 'created_at').prefetch_related('items__account')
+    # Fetching all entries linked to this society, prefetching items and accounts for performance
+    journal_entries = JournalEntry.objects.filter(society_name=society_name).order_by('date', 'id').prefetch_related('items__account')
 
     return render(request, 'core/accounting/full_report.html', {
         'journal_entries': journal_entries,
