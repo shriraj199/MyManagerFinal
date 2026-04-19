@@ -51,6 +51,8 @@ class User(AbstractUser):
     is_pro_member = models.BooleanField(default=True)
 
     def __str__(self):
+        if self.unit_number:
+            return f"{self.unit_number} - {self.username}"
         return f"{self.username} ({self.role})"
 
     def get_maintenance_balance(self):
@@ -213,6 +215,9 @@ class PaymentProof(models.Model):
     extracted_account_digits = models.CharField(max_length=10, blank=True, null=True)
     extracted_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    months_paid = models.PositiveIntegerField(default=1, help_text="Number of months paid in advance")
+    is_manual = models.BooleanField(default=False)
+    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='recorded_payments')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):

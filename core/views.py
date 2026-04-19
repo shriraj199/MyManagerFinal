@@ -544,12 +544,51 @@ def maintenance_view(request):
         proof.save()
         return redirect('maintenance')
 
+    members = []
+    if request.user.role == 'secretary':
+        members = User.objects.filter(society_name=society_name, role='resident', resident_role='owner').order_by('unit_number')
+
     return render(request, 'core/maintenance.html', {
         'proofs': proofs,
         'target_fee': target_fee,
         'settings': settings_obj,
-        'is_rental': is_rental
+        'is_rental': is_rental,
+        'members': members,
+        'society_name': society_name
     })
+
+@login_required
+def record_advance_payment(request):
+    """Allows Secretaries to manually record or bulk/advance payments for residents."""
+    if request.user.role != 'secretary':
+        return redirect('home')
+        
+    if request.method == 'POST':
+        resident_id = request.POST.get('resident_id')
+        amt = Decimal(request.POST.get('amount', '0'))
+        pay_date = request.POST.get('date')
+        months = int(request.POST.get('months', 1))
+        
+        resident = get_object_or_404(User, id=resident_id, society_name=request.user.society_name)
+        
+        # Create a manual verified proof
+        from .models import PaymentProof
+        PaymentProof.objects.create(
+            user=resident,
+            society_name=request.user.society_name,
+            extracted_amount=amt,
+            extracted_date=pay_date,
+            status='verified',
+            is_manual=True,
+            months_paid=months,
+            recorded_by=request.user,
+            proof_image='default_manual.png' # Placeholder
+        )
+        
+        messages.success(request, f"Advance payment of ₹{amt} for {resident} recorded successfully.")
+        return redirect('maintenance')
+    
+    return redirect('maintenance')
 
 @login_required
 def verify_payment_proof(request, proof_id, action):
