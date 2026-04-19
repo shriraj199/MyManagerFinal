@@ -314,33 +314,22 @@ def final_accounts(request):
         'society_name': society_name
     })
 
-@login_required
-def full_accounting_report(request):
-    society_name = get_accounting_society(request)
-    if not society_name:
-        return redirect('accounting_dashboard')
-        
+from django.http import HttpResponse
+from datetime import date
+
+def get_accounting_data(society_name):
+    from .models import LedgerAccount, JournalEntry
     accounts = LedgerAccount.objects.filter(society_name=society_name)
     
-    # --- TRIAL BALANCE DATA ---
     tb_data = []
-    total_dr = 0
-    total_cr = 0
-    for acc in accounts:
-        bal, bal_type = calculate_account_balance(acc)
-        if bal != 0:
-            if bal_type == 'Dr':
-                tb_data.append({'name': acc.name, 'dr': bal, 'cr': 0})
-                total_dr += bal
-            else:
-                tb_data.append({'name': acc.name, 'dr': 0, 'cr': bal})
-                total_cr += bal
-
-    # --- FINAL ACCOUNTS DATA ---
+    total_dr = total_cr = 0
+    
     trading_dr = []; trading_cr = []
-    trading_dr_total = 0; trading_cr_total = 0
+    trading_dr_total = trading_cr_total = 0
+    
     pl_dr = []; pl_cr = []
-    pl_dr_total = 0; pl_cr_total = 0
+    pl_dr_total = pl_cr_total = 0
+    
     bs_assets = []; bs_liabilities = []
     bs_assets_total = bs_liab_total = 0
     
@@ -406,7 +395,7 @@ def full_accounting_report(request):
 def full_accounting_report(request):
     if request.user.role not in ['secretary', 'company']:
         return redirect('home')
-    society_name = request.user.society_name
+    society_name = request.user.society_name or request.GET.get('society')
     data = get_accounting_data(society_name)
     return render(request, 'core/accounting/full_report.html', data)
 
@@ -416,7 +405,7 @@ def download_report_pdf(request):
     if request.user.role not in ['secretary', 'company']:
         return HttpResponse("Unauthorized", status=403)
         
-    society_name = request.user.society_name
+    society_name = request.user.society_name or request.GET.get('society')
     data = get_accounting_data(society_name)
     
     from io import BytesIO
