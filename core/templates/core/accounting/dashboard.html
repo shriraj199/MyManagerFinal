@@ -25,6 +25,11 @@
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-green-900">Final Accounts</h5>
             <p class="font-normal text-green-700">View Trading, Profit & Loss, and Balance Sheet.</p>
         </a>
+        
+        <a href="{% url 'accounting_full_report' %}{% if request.GET.society %}?society={{ request.GET.society|urlencode }}{% endif %}" class="block p-6 bg-gray-900 rounded-lg border border-gray-700 shadow-md hover:bg-black transition duration-300 text-white">
+            <h5 class="mb-2 text-2xl font-bold tracking-tight">Full PDF Report</h5>
+            <p class="font-normal text-gray-400">Export Trial Balance, P&L, and Balance Sheet into one PDF.</p>
+        </a>
     </div>
 
     <div class="mt-8 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">

@@ -299,15 +299,99 @@ def final_accounts(request):
         pl_cr.append({'name': 'Net Loss (transferred from Capital)', 'amount': abs(net_profit)})
         pl_cr_total += abs(net_profit)
         bs_assets.append({'name': 'Net Loss', 'amount': abs(net_profit)})
-        bs_assets_total += abs(net_profit)
+    net_profit = max(0, (pl_cr_total + gross_profit) - (pl_dr_total + gross_loss))
+    net_loss = max(0, (pl_dr_total + gross_loss) - (pl_cr_total + gross_profit))
         
     return render(request, 'core/accounting/final_accounts.html', {
         'trading_dr': trading_dr, 'trading_cr': trading_cr,
         'trading_dr_total': trading_dr_total, 'trading_cr_total': trading_cr_total,
-        
+        'gross_profit': gross_profit, 'gross_loss': gross_loss,
         'pl_dr': pl_dr, 'pl_cr': pl_cr,
         'pl_dr_total': pl_dr_total, 'pl_cr_total': pl_cr_total,
+        'net_profit': net_profit, 'net_loss': net_loss,
+        'bs_assets': bs_assets, 'bs_liabilities': bs_liabilities,
+        'bs_assets_total': bs_assets_total, 'bs_liab_total': bs_liab_total,
+        'society_name': society_name
+    })
+
+@login_required
+def full_accounting_report(request):
+    society_name = get_accounting_society(request)
+    if not society_name:
+        return redirect('accounting_dashboard')
         
-        'bs_assets': bs_assets, 'bs_liab': bs_liab,
-        'bs_assets_total': bs_assets_total, 'bs_liab_total': bs_liab_total
+    accounts = LedgerAccount.objects.filter(society_name=society_name)
+    
+    # --- TRIAL BALANCE DATA ---
+    tb_data = []
+    total_dr = 0
+    total_cr = 0
+    for acc in accounts:
+        bal, bal_type = calculate_account_balance(acc)
+        if bal != 0:
+            if bal_type == 'Dr':
+                tb_data.append({'name': acc.name, 'dr': bal, 'cr': 0})
+                total_dr += bal
+            else:
+                tb_data.append({'name': acc.name, 'dr': 0, 'cr': bal})
+                total_cr += bal
+
+    # --- FINAL ACCOUNTS DATA ---
+    trading_dr = []; trading_cr = []
+    trading_dr_total = 0; trading_cr_total = 0
+    pl_dr = []; pl_cr = []
+    pl_dr_total = 0; pl_cr_total = 0
+    bs_assets = []; bs_liabilities = []
+    bs_assets_total = 0; bs_liab_total = 0
+
+    for acc in accounts:
+        bal, bal_type = calculate_account_balance(acc)
+        if bal == 0: continue
+        
+        if acc.statement_type == 'Trading':
+            if bal_type == 'Dr':
+                trading_dr.append({'name': acc.name, 'amount': bal})
+                trading_dr_total += bal
+            else:
+                trading_cr.append({'name': acc.name, 'amount': bal})
+                trading_cr_total += bal
+        elif acc.statement_type == 'PL':
+            if bal_type == 'Dr':
+                pl_dr.append({'name': acc.name, 'amount': bal})
+                pl_dr_total += bal
+            else:
+                pl_cr.append({'name': acc.name, 'amount': bal})
+                pl_cr_total += bal
+        elif acc.statement_type == 'BalanceSheet':
+            if bal_type == 'Dr':
+                bs_assets.append({'name': acc.name, 'amount': bal})
+                bs_assets_total += bal
+            else:
+                bs_liabilities.append({'name': acc.name, 'amount': bal})
+                bs_liab_total += bal
+
+    # Calculation logic for Profit/Loss
+    gross_profit = max(0, trading_cr_total - trading_dr_total)
+    gross_loss = max(0, trading_dr_total - trading_cr_total)
+    
+    pl_cr_total_adjusted = pl_cr_total + gross_profit
+    pl_dr_total_adjusted = pl_dr_total + gross_loss
+    
+    net_profit = max(0, pl_cr_total_adjusted - pl_dr_total_adjusted)
+    net_loss = max(0, pl_dr_total_adjusted - pl_cr_total_adjusted)
+    
+    bs_liab_total += net_profit
+    bs_assets_total += net_loss
+
+    return render(request, 'core/accounting/full_report.html', {
+        'tb_data': tb_data, 'total_dr': total_dr, 'total_cr': total_cr,
+        'trading_dr': trading_dr, 'trading_cr': trading_cr,
+        'trading_dr_total': trading_dr_total, 'trading_cr_total': trading_cr_total,
+        'gross_profit': gross_profit, 'gross_loss': gross_loss,
+        'pl_dr': pl_dr, 'pl_cr': pl_cr,
+        'pl_dr_total': pl_dr_total, 'pl_cr_total': pl_cr_total,
+        'net_profit': net_profit, 'net_loss': net_loss,
+        'bs_assets': bs_assets, 'bs_liabilities': bs_liabilities,
+        'bs_assets_total': bs_assets_total, 'bs_liab_total': bs_liab_total,
+        'society_name': society_name
     })

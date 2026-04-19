@@ -47,4 +47,5 @@ urlpatterns = [
     path('accounting/trial-balance/', accounting_views.trial_balance, name='accounting_trial_balance'),
     path('accounting/ledger/<int:account_id>/', accounting_views.account_ledger, name='accounting_account_ledger'),
     path('accounting/final-accounts/', accounting_views.final_accounts, name='accounting_final_accounts'),
+    path('accounting/full-report/', accounting_views.full_accounting_report, name='accounting_full_report'),
 ]
