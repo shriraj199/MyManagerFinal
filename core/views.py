@@ -88,6 +88,19 @@ def register(request):
                 if existing_secretary:
                     messages.error(request, 'A secretary already exists for this society.')
                     return render(request, 'core/register.html')
+
+            # UNIT NUMBER VALIDATION (ONLY FOR RESIDENTS/SECRETARIES)
+            if unit_number:
+                # 1. Pattern Validation (e.g., O-101)
+                if not re.match(r'^[A-Za-z]+-\d+$', unit_number):
+                    messages.error(request, 'Flat number must follow pattern: Wing-Number (e.g., O-101).')
+                    return render(request, 'core/register.html')
+                
+                # 2. Uniqueness Check in same society
+                unit_number = unit_number.upper()
+                if User.objects.filter(society_name=society, unit_number=unit_number).exists():
+                    messages.error(request, f'Flat {unit_number} is already registered in this society.')
+                    return render(request, 'core/register.html')
         else:
             society = None
 
