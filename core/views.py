@@ -122,7 +122,15 @@ def register(request):
         except IntegrityError:
             messages.error(request, 'An account with this email already exists.')
             return render(request, 'core/register.html')
-    return render(request, 'core/register.html')
+
+    # Support pre-filled invite code from URL
+    prefilled_code = request.GET.get('invite_code', '')
+    prefilled_role = request.GET.get('role', 'resident')
+
+    return render(request, 'core/register.html', {
+        'prefilled_code': prefilled_code,
+        'prefilled_role': prefilled_role,
+    })
 
 @login_required
 def dashboard_redirect(request):

@@ -121,8 +121,8 @@
 
             <div id="invite_code_container" class="hidden">
                 <label class="block text-xs font-black text-textdark uppercase tracking-widest mb-2 opacity-50 ml-1">Invite Code</label>
-                <input type="text" id="invite_code_input" name="invite_code" value="{{ request.GET.invite_code|default:'' }}" class="bg-gray-50 border border-bordercolor text-textdark rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block w-full p-3 font-medium text-sm transition-all" placeholder="e.g. A1B2C3D4">
-                <p class="text-xs text-muted mt-1 ml-1 font-medium">Provided by your management company or secretary</p>
+                <input type="text" id="invite_code_input" name="invite_code" value="{{ prefilled_code|default:'' }}" {% if prefilled_code %}readonly{% endif %} class="bg-gray-50 border border-bordercolor text-textdark rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block w-full p-3 font-medium text-sm transition-all {% if prefilled_code %}opacity-60 cursor-not-allowed{% endif %}" placeholder="e.g. A1B2C3D4">
+                <p class="text-xs text-muted mt-1 ml-1 font-medium">{% if prefilled_code %}Code applied from invite link{% else %}Provided by your management company or secretary{% endif %}</p>
             </div>
 
             <div>
@@ -192,11 +192,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCarousel();
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const roleParam = urlParams.get('role');
+    const prefilledRole = "{{ prefilled_role }}";
+    const roleMap = { 'resident': 0, 'secretary': 1, 'watchman': 2, 'company': 3 };
     
-    if (roleParam === 'watchman') {
-        jumpToSlide(2); // Index 2 is Watchman
+    if (prefilledRole && roleMap[prefilledRole] !== undefined) {
+        jumpToSlide(roleMap[prefilledRole]);
     } else {
         updateCarousel(); // Initial call to sync
     }
