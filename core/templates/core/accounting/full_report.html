@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
-<div class="container mx-auto p-4 max-w-5xl relative" id="report-content">
+<div class="container mx-auto p-2 sm:p-4 max-w-5xl relative overflow-x-hidden" id="report-content">
 
     <div class="flex items-center justify-between mb-10 pb-6 border-b-2 border-gray-100">
         <div>
@@ -270,6 +270,26 @@
 </script>
 
 <style>
+    @media (max-width: 768px) {
+        /* Edge to edge for mobile */
+        #report-content {
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        /* Slightly smaller text to fit more data */
+        table, .text-sm { 
+            font-size: 11px !important; 
+        }
+        th, td {
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+        }
+        .text-4xl { font-size: 1.5rem !important; }
+        .text-xl { font-size: 1.1rem !important; }
+    }
+
     @media print {
         .no-print { display: none !important; }
     }
