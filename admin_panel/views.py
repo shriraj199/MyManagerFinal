@@ -107,6 +107,7 @@ def maintenance_settings(request):
         settings.maintenance_charge = request.POST.get('maintenance_charge', 0)
         settings.due_day = request.POST.get('due_day', 15)
         settings.expected_payee_account = request.POST.get('expected_payee_account')
+        settings.late_fee_charge = request.POST.get('late_fee_charge', 0)
         
         if request.FILES.get('maintenance_qr'):
             settings.maintenance_qr = request.FILES.get('maintenance_qr')

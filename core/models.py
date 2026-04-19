@@ -85,7 +85,7 @@ class User(AbstractUser):
         current_bill = Bill.objects.filter(user=self, month=month_name, year=year).first()
         
         due_day = getattr(settings, 'due_day', 15)
-        late_fee_multi = Decimal(str(getattr(settings, 'late_fee_percentage', 21))) / 100
+        late_fee_charge = getattr(settings, 'late_fee_charge', Decimal('0.00'))
         
         if current_bill:
             # If bill exists, use its total but subtract credit
@@ -93,14 +93,14 @@ class User(AbstractUser):
             
             # Apply late fee ONLY if not already applied in the Bill object and it's past due day
             if now.day > due_day and current_due > 0.01 and not current_bill.is_late_applied:
-                current_due += (current_bill.maintenance_charge * late_fee_multi)
+                current_due += late_fee_charge
         else:
             # Ungenerated: Monthly Charge - Credit
             current_due = base_charge - excess_payment
             
             # Apply Late Fee if day > due_day and still unpaid (> 0.01)
             if now.day > due_day and current_due > 0.01:
-                current_due += (base_charge * late_fee_multi)
+                current_due += late_fee_charge
                 
         return current_due
 
@@ -263,7 +263,7 @@ class SocietyMaintenanceSettings(models.Model):
     maintenance_qr = models.ImageField(upload_to='maintenance_qrs/', blank=True, null=True)
     expected_payee_account = models.CharField(max_length=10, blank=True, null=True, help_text="Last 4 digits of your bank account (e.g. 5200)")
     due_day = models.PositiveSmallIntegerField(default=15, help_text="Day of the month when late fee starts (e.g. 15)")
-    late_fee_percentage = models.PositiveSmallIntegerField(default=21, help_text="Percentage of late fee tax (e.g. 21)")
+    late_fee_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Fixed amount to charge if paid after due date")
 
     def save(self, *args, **kwargs):
         if self.maintenance_qr:
