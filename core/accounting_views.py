@@ -380,10 +380,11 @@ def full_accounting_report(request):
     net_profit = max(0, pl_cr_total_adjusted - pl_dr_total_adjusted)
     net_loss = max(0, pl_dr_total_adjusted - pl_cr_total_adjusted)
     
-    bs_liab_total += net_profit
-    bs_assets_total += net_loss
+    # --- JOURNAL ENTRIES ---
+    journal_entries = JournalEntry.objects.filter(society_name=society_name).order_by('date', 'created_at').prefetch_related('items__account')
 
     return render(request, 'core/accounting/full_report.html', {
+        'journal_entries': journal_entries,
         'tb_data': tb_data, 'total_dr': total_dr, 'total_cr': total_cr,
         'trading_dr': trading_dr, 'trading_cr': trading_cr,
         'trading_dr_total': trading_dr_total, 'trading_cr_total': trading_cr_total,
