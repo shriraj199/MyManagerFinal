@@ -468,9 +468,8 @@ def download_report_pdf(request):
     story.append(t)
     story.append(PageBreak())
     
-    # 3. Trading & PL Account
-    story.append(Paragraph("3. Trading & Profit & Loss Account", styles['Heading2']))
-    # Trading Data
+    # 3. Trading Account
+    story.append(Paragraph("3. Trading Account", styles['Heading2']))
     trading_data = [['Debit Particulars', 'Amount', 'Credit Particulars', 'Amount']]
     max_t = max(len(data['trading_dr']), len(data['trading_cr']))
     for i in range(max_t):
@@ -482,11 +481,16 @@ def download_report_pdf(request):
     t_table.setStyle(TableStyle([
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+        ('ALIGN', (3,0), (3,-1), 'RIGHT'),
     ]))
     story.append(t_table)
     story.append(Spacer(1, 0.5*cm))
+    story.append(Paragraph(f"Gross Profit: Rs. {data['gross_profit']:.2f}", styles['Normal']))
+    story.append(PageBreak())
 
-    # PL Data
+    # 4. Profit & Loss Account
+    story.append(Paragraph("4. Profit & Loss Account", styles['Heading2']))
     pl_data = [['Debit (Expenses)', 'Amount', 'Credit (Incomes)', 'Amount']]
     max_pl = max(len(data['pl_dr']), len(data['pl_cr']))
     for i in range(max_pl):
@@ -498,13 +502,16 @@ def download_report_pdf(request):
     pl_table.setStyle(TableStyle([
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+        ('ALIGN', (3,0), (3,-1), 'RIGHT'),
     ]))
     story.append(pl_table)
+    story.append(Spacer(1, 0.5*cm))
     story.append(Paragraph(f"Net Profit: Rs. {data['net_profit']:.2f}", styles['Normal']))
     story.append(PageBreak())
 
-    # 4. Balance Sheet
-    story.append(Paragraph("4. Balance Sheet", styles['Heading2']))
+    # 5. Balance Sheet
+    story.append(Paragraph("5. Balance Sheet", styles['Heading2']))
     bs_data = [['Liabilities', 'Amount', 'Assets', 'Amount']]
     max_bs = max(len(data['bs_liabilities']), len(data['bs_assets']))
     for i in range(max_bs):
