@@ -360,7 +360,7 @@
         // Show preloader on internal navigation
         document.addEventListener('click', (e) => {
             const link = e.target.closest('a');
-            if (link && !link.hasAttribute('download') && link.target !== '_blank' &&
+            if (link && !link.hasAttribute('download') && !link.classList.contains('direct-download') && link.target !== '_blank' &&
                 link.href && !link.href.startsWith('javascript:') && !link.href.startsWith('mailto:') &&
                 !link.href.startsWith('tel:') && link.origin === window.location.origin) {
 
