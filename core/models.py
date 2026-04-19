@@ -374,6 +374,18 @@ class LedgerAccount(models.Model):
     account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
     statement_type = models.CharField(max_length=20, choices=STATEMENT_TYPES)
     
+    def get_balance(self):
+        from .models import JournalItem
+        from django.db.models import Sum
+        from decimal import Decimal
+        dr_total = JournalItem.objects.filter(account=self, entry_type='Dr').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+        cr_total = JournalItem.objects.filter(account=self, entry_type='Cr').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+        
+        if self.account_type in ['Asset', 'Expense']:
+            return dr_total - cr_total
+        else:
+            return cr_total - dr_total
+
     def __str__(self):
         return f"{self.name} ({self.society_name})"
         
