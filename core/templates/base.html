@@ -28,6 +28,16 @@
             }
         }
     </script>
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/core/pwa/sw.js')
+                    .then(reg => console.log('SW Registered', reg))
+                    .catch(err => console.log('SW Failed', err));
+            });
+        }
+    </script>
 </head>
 
 <body class="bg-gray-50 text-textdark antialiased font-sans flex min-h-screen">

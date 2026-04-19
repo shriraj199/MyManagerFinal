@@ -1,12 +1,15 @@
 {
   "name": "TheManager",
   "short_name": "TheManager",
+  "id": "themanager-pwa",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "capture_links": "existing-client",
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
+  "prefer_related_applications": false,
   "background_color": "#ffffff",
   "theme_color": "#2563EB",
   "description": "Premium Property Management System",

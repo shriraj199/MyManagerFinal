@@ -1,39 +1,34 @@
-const CACHE_NAME = 'themanager-v2';
+const CACHE_NAME = 'themanager-cache-v1';
 const urlsToCache = [
   '/',
   '/static/core/pwa/manifest.json',
-  '/static/core/pwa/icon-512.png'
+  '/static/core/pwa/logo.png',
 ];
 
 self.addEventListener('install', event => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
   );
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    Promise.all([
-      self.clients.claim(),
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.filter(name => name !== CACHE_NAME)
-            .map(name => caches.delete(name))
-        );
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        if (response) return response;
+        return fetch(event.request);
       })
-    ])
   );
 });
 
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  if (event.request.url.startsWith('http') && !event.request.url.includes(self.location.origin)) {
-    return;
-  }
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
+// Capture links and redirect to existing window if possible
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      if (clientList.length > 0) return clientList[0].focus();
+      return clients.openWindow('/');
+    })
   );
 });
