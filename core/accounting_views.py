@@ -424,10 +424,12 @@ def download_report_pdf(request):
     society_name = request.user.society_name or request.GET.get('society')
     return _generate_accounting_pdf(society_name)
 
-def public_download_report_pdf(request, society_name, signature):
+def public_download_report_pdf(request):
     """Allows downloading a society report without login IF the signature is valid.
     Fixes Android WebView session issues."""
-    if signature != get_report_signature(society_name):
+    society_name = request.GET.get('society')
+    signature = request.GET.get('signature')
+    if not society_name or signature != get_report_signature(society_name):
         return HttpResponse("Invalid Signature", status=403)
         
     return _generate_accounting_pdf(society_name)

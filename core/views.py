@@ -1110,9 +1110,11 @@ def download_unpaid_report(request, society_name=None):
     response.write(pdf)
     return response
 
-def public_download_unpaid_report(request, society_name, signature):
+def public_download_unpaid_report(request):
+    society_name = request.GET.get('society')
+    signature = request.GET.get('signature')
     from .accounting_views import get_report_signature
-    if signature != get_report_signature(society_name):
+    if not society_name or signature != get_report_signature(society_name):
         return HttpResponse("Invalid Signature", status=403)
     return download_unpaid_report.__wrapped__(request, society_name=society_name)
 

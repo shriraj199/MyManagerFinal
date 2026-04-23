@@ -12,7 +12,7 @@
             <button onclick="downloadPDF()" data-html2canvas-ignore="true" class="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 no-print">
                 <i data-lucide="download" class="w-4 h-4"></i> Download PDF
             </button>
-            <a href="{% url 'public_download_report_pdf' society_name download_signature %}" 
+            <a href="{% url 'public_download_report_pdf' %}?society={{ society_name|urlencode }}&signature={{ download_signature }}" 
                data-html2canvas-ignore="true" 
                class="direct-download bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 no-print">
                 <i data-lucide="smartphone" class="w-4 h-4"></i> Direct Download (APK)
