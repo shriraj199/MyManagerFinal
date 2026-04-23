@@ -29,19 +29,8 @@ def dashboard(request):
     bills = request.user.bills.filter(status='Pending')
     complaints = request.user.complaints.all()
 
-    # Calculate total pending amount with dynamic late fees
-    total_pending = Decimal('0.00')
-    today = date.today()
-
-    for bill in bills:
-        if bill.due_date and today > bill.due_date:
-            if not bill.is_late_applied:
-                late_fee = bill.total_amount * Decimal('0.21')
-                bill.late_fee_amount = late_fee
-                bill.total_amount += late_fee
-                bill.is_late_applied = True
-                bill.save()
-        total_pending += bill.total_amount
+    # Total pending now includes multi-month debt and automatically applied late fees
+    total_pending = request.user.get_maintenance_balance()
 
     context = {
         'bills_count': bills.count(),
@@ -87,14 +76,9 @@ def bills_list(request):
     bills = request.user.bills.all().order_by('-year', '-month')
     today = date.today()
 
-    for bill in bills:
-        if bill.status == 'Pending' and bill.due_date and today > bill.due_date:
-            if not bill.is_late_applied:
-                late_fee = bill.total_amount * Decimal('0.21')
-                bill.late_fee_amount = late_fee
-                bill.total_amount += late_fee
-                bill.is_late_applied = True
-                bill.save()
+    # Late fees are now automatically applied by request.user.get_maintenance_balance() 
+    # whenever it is called, or we can explicitly call it here to ensure bills are updated.
+    request.user.get_maintenance_balance()
 
     return render(request, 'resident/bills.html', {
         'bills': bills,

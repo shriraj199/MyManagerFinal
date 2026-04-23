@@ -56,55 +56,47 @@ class User(AbstractUser):
         return f"{self.username} ({self.role})"
 
     def get_maintenance_balance(self):
-        """Calculates balance for the current month, carrying over credits but resetting debts."""
+        """Calculates total outstanding balance across all unpaid bills, applying late fees for all overdue months."""
         from resident.models import Bill
         from decimal import Decimal
         from django.utils import timezone
         
         now = timezone.now()
-        month_name = now.strftime("%B")
-        year = now.year
+        today = now.date()
         
-        # 1. Historical Credit Carry-over
-        # Total payments made by user
-        total_payments = self.payment_proofs.filter(status__in=['verified', 'approved', 'flagged']).aggregate(models.Sum('extracted_amount'))['extracted_amount__sum'] or Decimal('0.00')
-        
-        # Total liabilities generated BEFORE this month
-        historical_liabilities = Bill.objects.filter(user=self).exclude(month=month_name, year=year).aggregate(models.Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
-        
-        # Calculate excess payment (credit) - we reset debts so excess is never < 0
-        excess_payment = max(Decimal('0.00'), total_payments - historical_liabilities)
-        
-        # 2. Current Month Dues
         from .models import SocietyMaintenanceSettings
         settings = SocietyMaintenanceSettings.objects.filter(society_name=self.society_name).first()
-        if not settings:
-            return -excess_payment
-            
-        base_charge = settings.maintenance_charge
+        late_fee_charge = settings.late_fee_charge if settings else Decimal('0.00')
         
-        # Check if a bill for THIS month already exists
-        current_bill = Bill.objects.filter(user=self, month=month_name, year=year).first()
+        # 1. Update Late Fees for ALL PENDING bills that have crossed their due date
+        pending_bills = self.bills.filter(status='Pending')
+        for bill in pending_bills:
+            if bill.due_date and today > bill.due_date and not bill.is_late_applied:
+                bill.late_fee_amount = late_fee_charge
+                bill.total_amount += late_fee_charge
+                bill.is_late_applied = True
+                bill.save()
         
-        due_day = getattr(settings, 'due_day', 15)
-        late_fee_charge = getattr(settings, 'late_fee_charge', Decimal('0.00'))
+        # 2. Sum up totals from all Pending bills (Past + Current months)
+        total_due = pending_bills.aggregate(models.Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
         
-        if current_bill:
-            # If bill exists, use its total but subtract credit
-            current_due = current_bill.total_amount - excess_payment
-            
-            # Apply late fee ONLY if not already applied in the Bill object and it's past due day
-            if now.day > due_day and current_due > 0.01 and not current_bill.is_late_applied:
-                current_due += late_fee_charge
-        else:
-            # Ungenerated: Monthly Charge - Credit
-            current_due = base_charge - excess_payment
-            
-            # Apply Late Fee if day > due_day and still unpaid (> 0.01)
-            if now.day > due_day and current_due > 0.01:
-                current_due += late_fee_charge
+        # 3. Factor in ungenerated bill if we are within a month that has no bill yet
+        # (This handles the transition before the secretary clicks "Generate Bills")
+        month_name = now.strftime("%B")
+        year = now.year
+        if not pending_bills.filter(month=month_name, year=year).exists() and settings:
+            # Check if a PAID bill exists for current month
+            if not self.bills.filter(month=month_name, year=year, status='Paid').exists():
+                # No bill at all for this month - simulate its charge
+                base_charge = settings.maintenance_charge
+                total_due += base_charge
                 
-        return current_due
+                # Apply late fee to this simulated charge if past due day
+                due_day = getattr(settings, 'due_day', 15)
+                if now.day > due_day and base_charge > 0.01:
+                    total_due += late_fee_charge
+                    
+        return total_due
 
     def get_rent_balance(self):
         """Dynamic rent balance calculation for rental users."""
