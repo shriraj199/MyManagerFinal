@@ -545,6 +545,7 @@ def maintenance_view(request):
         return redirect('maintenance')
 
     manual_charges = []
+    members = []
     if request.user.role == 'secretary':
         from resident.models import Bill
         manual_charges = Bill.objects.filter(user__society_name=society_name, month=None).order_by('-date')[:10]
