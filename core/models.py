@@ -77,23 +77,21 @@ class User(AbstractUser):
         total_liabilities = Decimal('0.00')
         
         for bill in all_bills:
-            # Update the individual bill amounts to match CURRENT settings
-            # This ensures receipts and lists also show the new prize
+            # Update the base maintenance charge based on CURRENT settings
             bill.maintenance_charge = current_mnt_charge * bill.months_covered
             
-            # Recalculate late fee if overdue
-            is_overdue = bill.due_date and today > bill.due_date
-            if is_overdue:
-                bill.late_fee_amount = current_late_charge * bill.months_covered
-                bill.is_late_applied = True
-            else:
-                # If not overdue (e.g. current month or paid early), reset late fee
-                # (Unless it was manually applied in add_manual_charge, but we update it anyway)
-                bill.late_fee_amount = Decimal('0.00')
-                bill.is_late_applied = False
+            # Recalculate late fee ONLY for Pending bills
+            if bill.status == 'Pending':
+                is_overdue = bill.due_date and today > bill.due_date
+                if is_overdue:
+                    bill.late_fee_amount = current_late_charge * bill.months_covered
+                    bill.is_late_applied = True
+                else:
+                    bill.late_fee_amount = Decimal('0.00')
+                    bill.is_late_applied = False
             
+            # For PAID bills, we keep the late fee as it is (it was already resolved)
             bill.total_amount = bill.maintenance_charge + bill.late_fee_amount
-            # Save the updated amounts back to DB so UI matches
             bill.save(update_fields=['maintenance_charge', 'late_fee_amount', 'total_amount', 'is_late_applied'])
             
             total_liabilities += bill.total_amount

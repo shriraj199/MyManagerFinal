@@ -544,12 +544,15 @@ def maintenance_view(request):
         proof.save()
         return redirect('maintenance')
 
-    members = []
+    manual_charges = []
     if request.user.role == 'secretary':
+        from resident.models import Bill
+        manual_charges = Bill.objects.filter(user__society_name=society_name, month=None).order_by('-date')[:10]
         members = User.objects.filter(society_name=society_name, role='resident', resident_role='owner').order_by('unit_number')
 
     return render(request, 'core/maintenance.html', {
         'proofs': proofs,
+        'manual_charges': manual_charges,
         'target_fee': target_fee,
         'settings': settings_obj,
         'is_rental': is_rental,
@@ -621,21 +624,22 @@ def add_manual_charge(request):
         from django.utils import timezone
         now = timezone.now()
         
+        from datetime import timedelta
         Bill.objects.create(
             user=resident,
             title=title,
             maintenance_charge=m_charge * months,
             late_fee_amount=l_charge * months,
             total_amount=total_to_add,
-            month=now.strftime("%B"),
-            year=now.year,
+            month=None, # Don't block current month's regular bill
+            year=None,
             months_covered=months,
             status='Pending',
-            is_late_applied=True, # We included it in total
-            due_date=now.date() 
+            is_late_applied=True,
+            due_date=now.date() - timedelta(days=30) # Mark as overdue immediately
         )
         
-        messages.success(request, f"Manual arrears for {months} months (Total: ₹{total_to_add}) added to {resident}'s balance.")
+        messages.success(request, f"Arrears of ₹{total_to_add} ({months} months) recorded for {resident}. Monthly maintenance will still be added separately.")
         return redirect('maintenance')
     
     return redirect('maintenance')
