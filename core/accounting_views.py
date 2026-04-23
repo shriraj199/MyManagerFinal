@@ -402,7 +402,16 @@ def full_accounting_report(request):
         return redirect('home')
     society_name = request.user.society_name or request.GET.get('society')
     data = get_accounting_data(society_name)
+    data['download_signature'] = get_report_signature(society_name)
     return render(request, 'core/accounting/full_report.html', data)
+
+import hashlib
+from django.conf import settings
+
+def get_report_signature(society_name):
+    """Generates a secure signature for a society report to allow public but protected access."""
+    secret = settings.SECRET_KEY
+    return hashlib.sha256(f"{society_name}{secret}".encode()).hexdigest()
 
 @login_required
 def download_report_pdf(request):
@@ -411,6 +420,18 @@ def download_report_pdf(request):
         return HttpResponse("Unauthorized", status=403)
         
     society_name = request.user.society_name or request.GET.get('society')
+    return _generate_accounting_pdf(society_name)
+
+def public_download_report_pdf(request, society_name, signature):
+    """Allows downloading a society report without login IF the signature is valid.
+    Fixes Android WebView session issues."""
+    if signature != get_report_signature(society_name):
+        return HttpResponse("Invalid Signature", status=403)
+        
+    return _generate_accounting_pdf(society_name)
+
+def _generate_accounting_pdf(society_name):
+    """Shared internal logic to generate the full accounting PDF."""
     data = get_accounting_data(society_name)
     
     from io import BytesIO
@@ -438,7 +459,7 @@ def download_report_pdf(request):
     for entry in data['journal_entries']:
         for item in entry.items.all():
             journal_data.append([
-                entry.date.strftime('%d-%m-%Y'),
+                entry.date.strftime('%d-%m-%Y') if hasattr(entry.date, 'strftime') else str(entry.date),
                 entry.description,
                 item.account.name,
                 f"{item.amount:.2f}" if item.entry_type == 'Dr' else '',

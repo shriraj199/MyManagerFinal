@@ -37,7 +37,7 @@
 
     {% if current_tab == 'unpaid' %}
     <div class="flex justify-end mb-4">
-        <a href="{% url 'download_unpaid_report' %}" class="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all">
+        <a href="{% url 'public_download_unpaid_report' society_name unpaid_report_signature %}" class="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all">
             <i data-lucide="file-down" class="w-4 h-4"></i>
             Download PDF Report
         </a>

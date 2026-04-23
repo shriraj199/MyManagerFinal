@@ -21,6 +21,7 @@ urlpatterns = [
     path('maintenance/ocr-preview/', views.process_ocr_preview, name='process_ocr_preview'),
     path('subscription/', views.subscription_view, name='subscription_view'),
     path('members/unpaid-report/', views.download_unpaid_report, name='download_unpaid_report'),
+    path('members/unpaid-report/public/<str:society_name>/<str:signature>/', views.public_download_unpaid_report, name='public_download_unpaid_report'),
     path('members/toggle-access/<int:user_id>/', views.toggle_subscription_access, name='toggle_subscription_access'),
     path('pro-management/', views.pro_management, name='pro_management'),
     path('force-migrate/', views.force_migrate),
@@ -51,4 +52,5 @@ urlpatterns = [
     path('accounting/final-accounts/', accounting_views.final_accounts, name='accounting_final_accounts'),
     path('accounting/full-report/', accounting_views.full_accounting_report, name='accounting_full_report'),
     path('accounting/full-report/download/', accounting_views.download_report_pdf, name='accounting_download_report_pdf'),
+    path('accounting/full-report/download/public/<str:society_name>/<str:signature>/', accounting_views.public_download_report_pdf, name='public_download_report_pdf'),
 ]

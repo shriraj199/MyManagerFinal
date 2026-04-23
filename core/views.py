@@ -191,12 +191,15 @@ def members_view(request):
         
         tab = request.GET.get('tab', 'all')
         
+        from .accounting_views import get_report_signature # Reusing logic
+        
         return render(request, 'core/society_members.html', {
             'members': members if tab == 'all' else unpaid_members, 
             'unpaid_count': len(unpaid_members),
             'society_name': society_name,
             'invite_code': invite_code,
-            'current_tab': tab
+            'current_tab': tab,
+            'unpaid_report_signature': get_report_signature(society_name)
         })
 
 @login_required
@@ -1028,11 +1031,11 @@ def subscription_view(request):
     })
 
 @login_required
-def download_unpaid_report(request):
-    if request.user.role != 'secretary':
-        return redirect('home')
-
-    society_name = request.user.society_name
+def download_unpaid_report(request, society_name=None):
+    if not society_name:
+        if request.user.role != 'secretary':
+            return redirect('home')
+        society_name = request.user.society_name
     # Strictly only Resident Owners should be in the maintenance report
     members = User.objects.filter(society_name=society_name, role='resident', resident_role='owner')
     
@@ -1106,5 +1109,12 @@ def download_unpaid_report(request):
     response['Content-Disposition'] = f'attachment; filename="unpaid_report_{today}.pdf"'
     response.write(pdf)
     return response
+
+def public_download_unpaid_report(request, society_name, signature):
+    from .accounting_views import get_report_signature
+    if signature != get_report_signature(society_name):
+        return HttpResponse("Invalid Signature", status=403)
+    return download_unpaid_report.__wrapped__(request, society_name=society_name)
+
 
 
