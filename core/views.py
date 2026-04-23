@@ -629,6 +629,7 @@ def add_manual_charge(request):
             total_amount=total_to_add,
             month=now.strftime("%B"),
             year=now.year,
+            months_covered=months,
             status='Pending',
             is_late_applied=True, # We included it in total
             due_date=now.date() 

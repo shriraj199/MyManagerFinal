@@ -56,7 +56,7 @@ class User(AbstractUser):
         return f"{self.username} ({self.role})"
 
     def get_maintenance_balance(self):
-        """Calculates total outstanding balance across all unpaid bills, applying late fees for all overdue months."""
+        """Calculates total outstanding balance dynamically based on CURRENT society settings."""
         from resident.models import Bill
         from decimal import Decimal
         from django.utils import timezone
@@ -66,41 +66,56 @@ class User(AbstractUser):
         
         from .models import SocietyMaintenanceSettings
         settings = SocietyMaintenanceSettings.objects.filter(society_name=self.society_name).first()
-        late_fee_charge = settings.late_fee_charge if settings else Decimal('0.00')
+        if not settings:
+            return Decimal('0.00')
+            
+        current_mnt_charge = settings.maintenance_charge
+        current_late_charge = settings.late_fee_charge
         
-        # 1. Update Late Fees for ALL PENDING bills that have crossed their due date
-        pending_bills = self.bills.filter(status='Pending')
-        for bill in pending_bills:
-            if bill.due_date and today > bill.due_date and not bill.is_late_applied:
-                bill.late_fee_amount = late_fee_charge
-                bill.total_amount += late_fee_charge
-                bill.is_late_applied = True
-                bill.save()
-        
-        # 2. Total Liabilities from ALL generated bills
+        # 1. Recalculate ALL bills based on current prizes
         all_bills = self.bills.all()
-        total_liabilities = all_bills.aggregate(models.Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        total_liabilities = Decimal('0.00')
         
-        # 3. Total Payments (verified/approved)
+        for bill in all_bills:
+            # Update the individual bill amounts to match CURRENT settings
+            # This ensures receipts and lists also show the new prize
+            bill.maintenance_charge = current_mnt_charge * bill.months_covered
+            
+            # Recalculate late fee if overdue
+            is_overdue = bill.due_date and today > bill.due_date
+            if is_overdue:
+                bill.late_fee_amount = current_late_charge * bill.months_covered
+                bill.is_late_applied = True
+            else:
+                # If not overdue (e.g. current month or paid early), reset late fee
+                # (Unless it was manually applied in add_manual_charge, but we update it anyway)
+                bill.late_fee_amount = Decimal('0.00')
+                bill.is_late_applied = False
+            
+            bill.total_amount = bill.maintenance_charge + bill.late_fee_amount
+            # Save the updated amounts back to DB so UI matches
+            bill.save(update_fields=['maintenance_charge', 'late_fee_amount', 'total_amount', 'is_late_applied'])
+            
+            total_liabilities += bill.total_amount
+        
+        # 2. Total Payments (verified/approved) - no change here
         total_payments = self.payment_proofs.filter(status__in=['verified', 'approved', 'flagged']).aggregate(models.Sum('extracted_amount'))['extracted_amount__sum'] or Decimal('0.00')
         
-        # 4. Starting Balance (Outstanding = Liabilities - Payments)
+        # 3. Calculated Balance (L - P)
         total_due = total_liabilities - total_payments
         
-        # 5. Factor in ungenerated bill if we are within a month that has no bill yet
+        # 4. Factor in ungenerated bill for current month
         month_name = now.strftime("%B")
         year = now.year
-        if not all_bills.filter(month=month_name, year=year).exists() and settings:
-            # Check if this month might have been paid but not billed (unlikely but possible)
-            # No bill at all for this month - simulate its charge
-            base_charge = settings.maintenance_charge
-            total_due += base_charge
+        if not all_bills.filter(month=month_name, year=year).exists():
+            # Simulate current month charge
+            total_due += current_mnt_charge
             
-            # Apply late fee to this simulated charge if past due day
+            # Apply current late fee if past due day
             due_day = getattr(settings, 'due_day', 15)
-            if now.day > due_day and base_charge > 0.01:
-                total_due += late_fee_charge
-                    
+            if now.day > due_day and current_mnt_charge > 0.01:
+                total_due += current_late_charge
+        
         return total_due
                     
         return total_due

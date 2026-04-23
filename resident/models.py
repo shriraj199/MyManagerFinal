@@ -18,6 +18,7 @@ class Bill(models.Model):
     # Billing period
     month = models.CharField(max_length=20, blank=True, null=True)
     year = models.IntegerField(blank=True, null=True)
+    months_covered = models.PositiveIntegerField(default=1, help_text="Number of months this bill covers")
     
     date = models.DateField(auto_now_add=True)
     due_date = models.DateField(null=True, blank=True)

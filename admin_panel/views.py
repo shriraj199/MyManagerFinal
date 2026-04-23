@@ -143,6 +143,7 @@ def generate_bills(request):
                 total_amount=settings.maintenance_charge,
                 month=month_name,
                 year=year,
+                months_covered=1,
                 due_date=due_date
             )
             bills_created += 1
