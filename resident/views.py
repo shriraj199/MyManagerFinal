@@ -128,10 +128,13 @@ def generate_receipt_pdf(request, bill_id):
     bill = get_object_or_404(Bill, id=bill_id, user=request.user, status='Paid')
     return _generate_pdf_response(bill)
 
-def public_generate_receipt_pdf(request, bill_id, signature):
+def public_generate_receipt_pdf(request):
     """Allows downloading a receipt without login IF the signature is valid. 
     Fixes Android WebView session issues."""
-    if signature != get_receipt_signature(bill_id):
+    bill_id = request.GET.get('bill_id')
+    signature = request.GET.get('signature')
+    
+    if not bill_id or signature != get_receipt_signature(bill_id):
         return HttpResponse("Invalid Signature", status=403)
         
     bill = get_object_or_404(Bill, id=bill_id, status='Paid')

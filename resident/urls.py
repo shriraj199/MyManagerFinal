@@ -8,7 +8,7 @@ urlpatterns = [
     path('more/', views.more_options, name='resident_more'),
     path('receipt/<int:bill_id>/', views.receipt_view, name='receipt_view'),
     path('receipt/<int:bill_id>/pdf/', views.generate_receipt_pdf, name='generate_receipt_pdf'),
-    path('receipt/public/<int:bill_id>/<str:signature>/', views.public_generate_receipt_pdf, name='public_generate_receipt_pdf'),
+    path('receipt/public/download/', views.public_generate_receipt_pdf, name='public_generate_receipt_pdf'),
 
     # ── Owner: Tenant Profiles ──────────────────────────────
     path('rental/', views.rental_management, name='rental_management'),
