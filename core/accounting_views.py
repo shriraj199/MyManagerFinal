@@ -411,7 +411,9 @@ from django.conf import settings
 def get_report_signature(society_name):
     """Generates a secure signature for a society report to allow public but protected access."""
     secret = settings.SECRET_KEY
-    return hashlib.sha256(f"{society_name}{secret}".encode()).hexdigest()
+    # Robustness: strip and lowercase to avoid space/case issues
+    stable_name = str(society_name).strip().lower()
+    return hashlib.sha256(f"{stable_name}{secret}".encode()).hexdigest()
 
 @login_required
 def download_report_pdf(request):
