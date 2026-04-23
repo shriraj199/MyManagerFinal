@@ -114,12 +114,31 @@ def receipt_view(request, bill_id):
     return render(request, 'resident/receipt.html', {'bill': bill})
 
 
+import hashlib
+def get_receipt_signature(bill_id):
+    """Generates a secure signature for a bill receipt to allow public but protected access."""
+    # Using a simple hash with the secret key
+    secret = settings.SECRET_KEY
+    return hashlib.sha256(f"{bill_id}{secret}".encode()).hexdigest()
+
 @login_required
 def generate_receipt_pdf(request, bill_id):
     if request.user.role != 'resident':
         return redirect('admin_dashboard')
     bill = get_object_or_404(Bill, id=bill_id, user=request.user, status='Paid')
+    return _generate_pdf_response(bill)
 
+def public_generate_receipt_pdf(request, bill_id, signature):
+    """Allows downloading a receipt without login IF the signature is valid. 
+    Fixes Android WebView session issues."""
+    if signature != get_receipt_signature(bill_id):
+        return HttpResponse("Invalid Signature", status=403)
+        
+    bill = get_object_or_404(Bill, id=bill_id, status='Paid')
+    return _generate_pdf_response(bill)
+
+def _generate_pdf_response(bill):
+    """Shared logic to generate the PDF response."""
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4,
                             rightMargin=2*cm, leftMargin=2*cm,
@@ -132,11 +151,7 @@ def generate_receipt_pdf(request, bill_id):
                                   spaceAfter=6)
     sub_style = ParagraphStyle('sub', parent=styles['Normal'],
                                 fontSize=10, textColor=colors.grey, spaceAfter=12)
-    label_style = ParagraphStyle('label', parent=styles['Normal'],
-                                  fontSize=9, textColor=colors.grey)
-    value_style = ParagraphStyle('value', parent=styles['Normal'],
-                                  fontSize=11, fontName='Helvetica-Bold')
-
+    
     story.append(Paragraph('PAYMENT RECEIPT', title_style))
     story.append(Paragraph(f'Receipt #{bill.id}', sub_style))
     story.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#e0e0e0')))
@@ -147,7 +162,7 @@ def generate_receipt_pdf(request, bill_id):
         ['Resident Name', user.get_full_name() or user.username],
         ['Society', user.society_name or '—'],
         ['Unit No.', user.unit_number or '—'],
-        ['Bill Period', f"{bill.get_month_display() if hasattr(bill, 'get_month_display') else bill.month} {bill.year}"],
+        ['Bill Period', f"{bill.month or ''} {bill.year or ''}"],
         ['Bill Status', bill.status],
         ['Transaction ID', bill.transaction_id or '—'],
         ['Payment Date', str(bill.payment_date or '—')],

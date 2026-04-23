@@ -15,6 +15,12 @@ class Bill(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Paid', 'Paid')], default='Pending')
     
+    def get_signature(self):
+        from django.conf import settings
+        import hashlib
+        secret = settings.SECRET_KEY
+        return hashlib.sha256(f"{self.id}{secret}".encode()).hexdigest()
+
     # Billing period
     month = models.CharField(max_length=20, blank=True, null=True)
     year = models.IntegerField(blank=True, null=True)

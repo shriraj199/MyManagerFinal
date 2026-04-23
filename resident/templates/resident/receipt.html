@@ -36,11 +36,11 @@
 
     <div class="mt-10 pt-6 border-t border-gray-100 text-center">
         <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">Thank you for your payment!</p>
-        <button onclick="window.print()"
+        <a href="{% url 'public_generate_receipt_pdf' bill.id bill.get_signature %}"
             class="w-full bg-gray-900 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-black transition active:scale-95 flex items-center justify-center gap-2">
-            <i data-lucide="printer" class="w-5 h-5"></i>
+            <i data-lucide="download" class="w-5 h-5"></i>
             Download PDF
-        </button>
+        </a>
         <a href="{% url 'resident_bills' %}" class="block mt-4 text-primary font-extrabold text-sm">Back to Bills</a>
     </div>
 </div>
