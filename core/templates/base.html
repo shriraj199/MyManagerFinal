@@ -387,7 +387,7 @@
         lucide.createIcons();
 
         // AGGRESSIVE CLEANUP: Kill all existing service workers once automatically
-        if (!localStorage.getItem('sw_cleaned_v4')) {
+        if (!localStorage.getItem('sw_cleaned_v5')) {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function (registrations) {
                     if (registrations.length > 0) {
@@ -399,15 +399,15 @@
                                 for (let name of names) caches.delete(name);
                             });
                         }
-                        localStorage.setItem('sw_cleaned_v4', 'true');
+                        localStorage.setItem('sw_cleaned_v5', 'true');
                         console.log('Aggressive SW cleanup performed.');
                         window.location.reload();
                     } else {
-                        localStorage.setItem('sw_cleaned_v4', 'true');
+                        localStorage.setItem('sw_cleaned_v5', 'true');
                     }
                 });
             } else {
-                localStorage.setItem('sw_cleaned_v4', 'true');
+                localStorage.setItem('sw_cleaned_v5', 'true');
             }
         }
 
