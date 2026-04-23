@@ -18,10 +18,16 @@
             <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload {% if is_rental %}Rent{% else %}Payment{% endif %} Proof
         </button>
         {% elif user.role == 'secretary' %}
-        <button onclick="document.getElementById('advance-modal').classList.remove('hidden')"
-            class="bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl px-6 py-3.5 uppercase tracking-wider text-xs shadow-lg shadow-green-200 transition-all flex items-center gap-2">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i> Record Advance Payment
-        </button>
+        <div class="flex flex-wrap gap-3">
+            <button onclick="document.getElementById('advance-modal').classList.remove('hidden')"
+                class="bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl px-6 py-3.5 uppercase tracking-wider text-xs shadow-lg shadow-green-200 transition-all flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Record Manual Payment
+            </button>
+            <button onclick="document.getElementById('charge-modal').classList.remove('hidden')"
+                    class="bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl px-6 py-3.5 uppercase tracking-wider text-xs shadow-lg shadow-rose-200 transition-all flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i> Add Extra Charge
+            </button>
+        </div>
         {% endif %}
     </div>
 
@@ -389,7 +395,7 @@
     <div class="absolute inset-0 bg-textdark/40 backdrop-blur-sm" onclick="closeModals()"></div>
     <div class="bg-white rounded-[2.5rem] w-full max-w-lg p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-extrabold text-textdark tracking-tight">Record Advance Payment</h2>
+            <h2 class="text-2xl font-extrabold text-textdark tracking-tight">Record Manual Payment</h2>
             <button type="button" onclick="closeModals()" class="p-3 -mr-2 text-muted hover:text-textdark transition-colors" aria-label="Close modal">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
@@ -400,9 +406,12 @@
             <div>
                 <label class="text-[10px] font-black text-muted uppercase tracking-widest block mb-2 px-2">Select Resident</label>
                 <select name="resident_id" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-green-500/20 transition-all outline-none appearance-none">
-                    <option value="">-- Select Resident (Flat-Name) --</option>
+                    <option value="">-- Select Resident --</option>
                     {% for m in members %}
-                    <option value="{{ m.id }}">{{ m }}</option>
+                    <option value="{{ m.id }}">
+                        {{ m.unit_number }} - {{ m.first_name|default:m.username }} 
+                        (Balance: ₹{{ m.get_maintenance_balance }})
+                    </option>
                     {% endfor %}
                 </select>
             </div>
@@ -424,7 +433,47 @@
             </div>
 
             <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-green-200 transition-all mt-4">
-                Save Advance Payment
+                Record Payment
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Manual Charge Modal (Secretary Only) -->
+<div id="charge-modal" class="fixed inset-0 z-[110] hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-textdark/40 backdrop-blur-sm" onclick="closeModals()"></div>
+    <div class="bg-white rounded-[2.5rem] w-full max-w-lg p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-extrabold text-textdark tracking-tight">Add Manual Charge</h2>
+            <button type="button" onclick="closeModals()" class="p-3 -mr-2 text-muted hover:text-textdark transition-colors" aria-label="Close modal">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <form action="{% url 'add_manual_charge' %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="text-[10px] font-black text-muted uppercase tracking-widest block mb-1 px-2">Select Resident</label>
+                <select name="resident_id" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-rose-500/20 appearance-none">
+                    <option value="">-- Select Resident --</option>
+                    {% for m in members %}
+                    <option value="{{ m.id }}">{{ m.unit_number }} - {{ m.first_name|default:m.username }} (Bal: ₹{{ m.get_maintenance_balance }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="text-[10px] font-black text-muted uppercase tracking-widest block mb-1 px-2">Charge Description</label>
+                <input type="text" name="title" required placeholder="e.g. Arrears / Penalty / Late Fee" class="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-rose-500/20">
+            </div>
+
+            <div>
+                <label class="text-[10px] font-black text-muted uppercase tracking-widest block mb-1 px-2">Amount to Charge (₹)</label>
+                <input type="number" name="amount" step="0.01" required placeholder="Amount will be added to debt" class="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-rose-500/20">
+            </div>
+
+            <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-rose-200 transition-all mt-4">
+                Apply Charge to Account
             </button>
         </form>
     </div>
@@ -436,10 +485,12 @@
         const uploadModal = document.getElementById('upload-modal');
         const imageModal = document.getElementById('image-modal');
         const advanceModal = document.getElementById('advance-modal');
+        const chargeModal = document.getElementById('charge-modal');
         
         if (uploadModal) uploadModal.classList.add('hidden');
         if (imageModal) imageModal.classList.add('hidden');
         if (advanceModal) advanceModal.classList.add('hidden');
+        if (chargeModal) chargeModal.classList.add('hidden');
     }
 
     async function previewImage(input) {

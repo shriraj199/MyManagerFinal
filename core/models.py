@@ -77,24 +77,31 @@ class User(AbstractUser):
                 bill.is_late_applied = True
                 bill.save()
         
-        # 2. Sum up totals from all Pending bills (Past + Current months)
-        total_due = pending_bills.aggregate(models.Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
+        # 2. Total Liabilities from ALL generated bills
+        all_bills = self.bills.all()
+        total_liabilities = all_bills.aggregate(models.Sum('total_amount'))['total_amount__sum'] or Decimal('0.00')
         
-        # 3. Factor in ungenerated bill if we are within a month that has no bill yet
-        # (This handles the transition before the secretary clicks "Generate Bills")
+        # 3. Total Payments (verified/approved)
+        total_payments = self.payment_proofs.filter(status__in=['verified', 'approved', 'flagged']).aggregate(models.Sum('extracted_amount'))['extracted_amount__sum'] or Decimal('0.00')
+        
+        # 4. Starting Balance (Outstanding = Liabilities - Payments)
+        total_due = total_liabilities - total_payments
+        
+        # 5. Factor in ungenerated bill if we are within a month that has no bill yet
         month_name = now.strftime("%B")
         year = now.year
-        if not pending_bills.filter(month=month_name, year=year).exists() and settings:
-            # Check if a PAID bill exists for current month
-            if not self.bills.filter(month=month_name, year=year, status='Paid').exists():
-                # No bill at all for this month - simulate its charge
-                base_charge = settings.maintenance_charge
-                total_due += base_charge
-                
-                # Apply late fee to this simulated charge if past due day
-                due_day = getattr(settings, 'due_day', 15)
-                if now.day > due_day and base_charge > 0.01:
-                    total_due += late_fee_charge
+        if not all_bills.filter(month=month_name, year=year).exists() and settings:
+            # Check if this month might have been paid but not billed (unlikely but possible)
+            # No bill at all for this month - simulate its charge
+            base_charge = settings.maintenance_charge
+            total_due += base_charge
+            
+            # Apply late fee to this simulated charge if past due day
+            due_day = getattr(settings, 'due_day', 15)
+            if now.day > due_day and base_charge > 0.01:
+                total_due += late_fee_charge
+                    
+        return total_due
                     
         return total_due
 

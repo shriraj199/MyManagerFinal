@@ -15,6 +15,7 @@ urlpatterns = [
     path('gate-records/', views.gate_records, name='gate_records'),
     path('receipt/download/<int:proof_id>/', views.generate_proof_receipt, name='generate_proof_receipt'),
     path('maintenance/record-advance/', views.record_advance_payment, name='record_advance_payment'),
+    path('maintenance/add-charge/', views.add_manual_charge, name='add_manual_charge'),
     path('maintenance/delete-proof/<int:proof_id>/', views.delete_payment_proof, name='delete_payment_proof'),
     path('maintenance/verify-proof/<int:proof_id>/<str:action>/', views.verify_payment_proof, name='verify_payment_proof'),
     path('maintenance/ocr-preview/', views.process_ocr_preview, name='process_ocr_preview'),

@@ -585,7 +585,40 @@ def record_advance_payment(request):
             proof_image='default_manual.png' # Placeholder
         )
         
-        messages.success(request, f"Advance payment of ₹{amt} for {resident} recorded successfully.")
+        messages.success(request, f"Manual payment of ₹{amt} for {resident} recorded successfully.")
+        return redirect('maintenance')
+    
+    return redirect('maintenance')
+
+@login_required
+def add_manual_charge(request):
+    """Allows Secretaries to manually add a charge, arrears, or penalty to a specific resident's account."""
+    if request.user.role != 'secretary':
+        return redirect('home')
+        
+    if request.method == 'POST':
+        resident_id = request.POST.get('resident_id')
+        amt = Decimal(request.POST.get('amount', '0'))
+        title = request.POST.get('title') or "Manual Adjustment / Arrears"
+        
+        resident = get_object_or_404(User, id=resident_id, society_name=request.user.society_name)
+        
+        from resident.models import Bill
+        from django.utils import timezone
+        now = timezone.now()
+        
+        Bill.objects.create(
+            user=resident,
+            title=title,
+            maintenance_charge=amt,
+            total_amount=amt,
+            month=now.strftime("%B"),
+            year=now.year,
+            status='Pending',
+            due_date=now.date() # Due immediately
+        )
+        
+        messages.success(request, f"Manual charge of ₹{amt} added to {resident}'s balance.")
         return redirect('maintenance')
     
     return redirect('maintenance')
