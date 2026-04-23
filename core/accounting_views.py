@@ -276,31 +276,36 @@ def final_accounts(request):
                     bs_liab_total += bal
 
     # Calculate Gross Profit / Loss
-    gross_profit = trading_cr_total - trading_dr_total
+    gross_diff = trading_cr_total - trading_dr_total
+    gross_profit = max(0, gross_diff)
+    gross_loss = max(0, -gross_diff)
+
     if gross_profit > 0:
         trading_dr.append({'name': 'Gross Profit c/d', 'amount': gross_profit})
         trading_dr_total += gross_profit
         pl_cr.append({'name': 'Gross Profit b/d', 'amount': gross_profit})
         pl_cr_total += gross_profit
-    elif gross_profit < 0:
-        trading_cr.append({'name': 'Gross Loss c/d', 'amount': abs(gross_profit)})
-        trading_cr_total += abs(gross_profit)
-        pl_dr.append({'name': 'Gross Loss b/d', 'amount': abs(gross_profit)})
-        pl_dr_total += abs(gross_profit)
+    elif gross_loss > 0:
+        trading_cr.append({'name': 'Gross Loss c/d', 'amount': gross_loss})
+        trading_cr_total += gross_loss
+        pl_dr.append({'name': 'Gross Loss b/d', 'amount': gross_loss})
+        pl_dr_total += gross_loss
 
     # Calculate Net Profit / Loss
-    net_profit = pl_cr_total - pl_dr_total
+    net_diff = pl_cr_total - pl_dr_total
+    net_profit = max(0, net_diff)
+    net_loss = max(0, -net_diff)
+
     if net_profit > 0:
         pl_dr.append({'name': 'Net Profit (transferred to Capital)', 'amount': net_profit})
         pl_dr_total += net_profit
         bs_liab.append({'name': 'Net Profit', 'amount': net_profit})
         bs_liab_total += net_profit
-    elif net_profit < 0:
-        pl_cr.append({'name': 'Net Loss (transferred from Capital)', 'amount': abs(net_profit)})
-        pl_cr_total += abs(net_profit)
-        bs_assets.append({'name': 'Net Loss', 'amount': abs(net_profit)})
-    net_profit = max(0, (pl_cr_total + gross_profit) - (pl_dr_total + gross_loss))
-    net_loss = max(0, (pl_dr_total + gross_loss) - (pl_cr_total + gross_profit))
+    elif net_loss > 0:
+        pl_cr.append({'name': 'Net Loss (transferred from Capital)', 'amount': net_loss})
+        pl_cr_total += net_loss
+        bs_assets.append({'name': 'Net Loss', 'amount': net_loss})
+        bs_assets_total += net_loss
         
     return render(request, 'core/accounting/final_accounts.html', {
         'trading_dr': trading_dr, 'trading_cr': trading_cr,
@@ -309,7 +314,7 @@ def final_accounts(request):
         'pl_dr': pl_dr, 'pl_cr': pl_cr,
         'pl_dr_total': pl_dr_total, 'pl_cr_total': pl_cr_total,
         'net_profit': net_profit, 'net_loss': net_loss,
-        'bs_assets': bs_assets, 'bs_liabilities': bs_liabilities,
+        'bs_assets': bs_assets, 'bs_liabilities': bs_liab,
         'bs_assets_total': bs_assets_total, 'bs_liab_total': bs_liab_total,
         'society_name': society_name
     })
