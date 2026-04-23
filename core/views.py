@@ -592,16 +592,30 @@ def record_advance_payment(request):
 
 @login_required
 def add_manual_charge(request):
-    """Allows Secretaries to manually add a charge, arrears, or penalty to a specific resident's account."""
+    """Allows Secretaries to manually add arrears/charges by specifying the number of months owed."""
     if request.user.role != 'secretary':
         return redirect('home')
         
     if request.method == 'POST':
         resident_id = request.POST.get('resident_id')
-        amt = Decimal(request.POST.get('amount', '0'))
-        title = request.POST.get('title') or "Manual Adjustment / Arrears"
+        months = int(request.POST.get('months', 1))
+        title = request.POST.get('title') or f"Arrears for {months} months"
         
         resident = get_object_or_404(User, id=resident_id, society_name=request.user.society_name)
+        
+        # Get settings for this society
+        from .models import SocietyMaintenanceSettings
+        settings = SocietyMaintenanceSettings.objects.filter(society_name=request.user.society_name).first()
+        
+        if not settings:
+            messages.error(request, "Society maintenance settings not found. Please set them first.")
+            return redirect('maintenance')
+            
+        m_charge = settings.maintenance_charge
+        l_charge = settings.late_fee_charge
+        
+        # Calculate Total: (Mnt * months) + (Late * months)
+        total_to_add = (m_charge * months) + (l_charge * months)
         
         from resident.models import Bill
         from django.utils import timezone
@@ -610,15 +624,17 @@ def add_manual_charge(request):
         Bill.objects.create(
             user=resident,
             title=title,
-            maintenance_charge=amt,
-            total_amount=amt,
+            maintenance_charge=m_charge * months,
+            late_fee_amount=l_charge * months,
+            total_amount=total_to_add,
             month=now.strftime("%B"),
             year=now.year,
             status='Pending',
-            due_date=now.date() # Due immediately
+            is_late_applied=True, # We included it in total
+            due_date=now.date() 
         )
         
-        messages.success(request, f"Manual charge of ₹{amt} added to {resident}'s balance.")
+        messages.success(request, f"Manual arrears for {months} months (Total: ₹{total_to_add}) added to {resident}'s balance.")
         return redirect('maintenance')
     
     return redirect('maintenance')

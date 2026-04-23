@@ -468,8 +468,9 @@
             </div>
 
             <div>
-                <label class="text-[10px] font-black text-muted uppercase tracking-widest block mb-1 px-2">Amount to Charge (₹)</label>
-                <input type="number" name="amount" step="0.01" required placeholder="Amount will be added to debt" class="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-rose-500/20">
+                <label class="text-[10px] font-black text-muted uppercase tracking-widest block mb-1 px-2">Number of Months Owed</label>
+                <input type="number" name="months" min="1" required value="1" class="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-rose-500/20">
+                <p class="text-[9px] text-muted mt-2 px-2">Total will be: ({{ settings.maintenance_charge }} + {{ settings.late_fee_charge }}) x Months</p>
             </div>
 
             <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl py-4 uppercase tracking-wider text-xs shadow-lg shadow-rose-200 transition-all mt-4">
