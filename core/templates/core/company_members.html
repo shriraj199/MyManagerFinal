@@ -21,7 +21,7 @@
     <!-- Societies Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for society in societies %}
-        <div onclick="window.location.href='{% url \'society_detail\' society.society_name %}'" class="society-card bg-card border border-bordercolor rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all flex flex-col justify-between cursor-pointer group">
+        <div onclick="window.location.href='{% url 'society_detail' society.society_name %}'" class="society-card bg-card border border-bordercolor rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all flex flex-col justify-between cursor-pointer group">
             <div class="mb-6">
                 <div class="w-12 h-12 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
                     <i data-lucide="building-2" class="w-6 h-6"></i>
