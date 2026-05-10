@@ -21,12 +21,12 @@
     <!-- Societies Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for society in societies %}
-        <div class="society-card bg-card border border-bordercolor rounded-3xl p-6 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between">
+        <div onclick="window.location.href='{% url \'society_detail\' society.society_name %}'" class="society-card bg-card border border-bordercolor rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all flex flex-col justify-between cursor-pointer group">
             <div class="mb-6">
-                <div class="w-12 h-12 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mb-4">
+                <div class="w-12 h-12 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
                     <i data-lucide="building-2" class="w-6 h-6"></i>
                 </div>
-                <h2 class="text-lg font-extrabold text-textdark truncate" title="{{ society.society_name }}">{{ society.society_name }}</h2>
+                <h2 class="text-lg font-extrabold text-textdark truncate group-hover:text-primary transition-colors" title="{{ society.society_name }}">{{ society.society_name }}</h2>
                 <p class="text-xs font-bold text-muted uppercase tracking-widest mt-1">Managed Society</p>
             </div>
             
@@ -37,7 +37,7 @@
                         {{ society.code }}
                     </span>
                 </div>
-                <button onclick="copyInviteLink('{{ society.code }}')" class="w-10 h-10 bg-gray-50 hover:bg-gray-100 text-muted hover:text-primary rounded-xl flex items-center justify-center transition-colors" title="Copy Invite Link">
+                <button onclick="event.stopPropagation(); copyInviteLink('{{ society.code }}')" class="w-10 h-10 bg-gray-50 hover:bg-gray-100 text-muted hover:text-primary rounded-xl flex items-center justify-center transition-colors" title="Copy Invite Link">
                     <i data-lucide="link" class="w-4 h-4"></i>
                 </button>
             </div>
