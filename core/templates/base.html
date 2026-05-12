@@ -68,6 +68,9 @@
     <div
         class="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-100 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 flex justify-between items-center z-50">
         <div class="flex items-center gap-2.5">
+            <button id="mobile-back-button" class="p-2 -ml-2 text-muted hover:text-primary transition-colors hidden" onclick="window.safeBack()">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
             <img src="{% static 'core/pwa/logo.png' %}" class="w-8 h-8 rounded-lg object-cover" alt="Logo">
             <span class="font-bold text-lg tracking-tight">TheManager</span>
         </div>
@@ -474,6 +477,71 @@
         openBtn?.addEventListener('click', () => toggleMenu(true));
         closeBtn?.addEventListener('click', () => toggleMenu(false));
         overlay?.addEventListener('click', () => toggleMenu(false));
+
+        // Back Button Visibility & Hardware Back Logic
+        function updateBackButton() {
+            const backBtn = document.getElementById('mobile-back-button');
+            if (backBtn) {
+                const path = window.location.pathname;
+                // Define paths that are considered "Home" or "Root" where back button should be hidden
+                const rootPaths = ['/', '/login/', '/register/', '/watchman/', '/accounting/', '/dashboard/'];
+                const isHome = rootPaths.includes(path) || path.endsWith('/dashboard/') || path.includes('/login/') || path.includes('/register/');
+                
+                // Show back button if not on a root/home page
+                if (!isHome) {
+                    backBtn.classList.remove('hidden');
+                } else {
+                    backBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        // Custom back function to handle edge cases
+        window.safeBack = function() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // If no history, default to home
+                window.location.href = '/';
+            }
+        };
+
+        // Initialize back button state
+        updateBackButton();
+        
+        // Update on navigation
+        window.addEventListener('popstate', updateBackButton);
+        
+        // Handle Hardware Back Button for Capacitor/Android
+        document.addEventListener('backbutton', function (e) {
+            // Close sidebar if open
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                // Use the existing toggleMenu function if available, or just hide it
+                if (typeof toggleMenu === 'function') {
+                    toggleMenu(false);
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    const overlay = document.getElementById('overlay');
+                    if (overlay) {
+                        overlay.classList.remove('opacity-100');
+                        setTimeout(() => overlay.classList.add('hidden'), 300);
+                    }
+                    document.body.style.overflow = '';
+                }
+                e.preventDefault();
+                return;
+            }
+
+            const path = window.location.pathname;
+            const rootPaths = ['/', '/watchman/', '/accounting/', '/dashboard/'];
+            const isHome = rootPaths.includes(path) || path.endsWith('/dashboard/');
+            
+            if (!isHome) {
+                e.preventDefault();
+                window.safeBack();
+            }
+        }, false);
     </script>
 
     <!-- Global Messages Popup -->
