@@ -1,13 +1,8 @@
 {% extends 'base.html' %}
+{% block header_title %}Login{% endblock %}
 {% block content %}
 <div class="flex-1 flex items-center justify-center p-6">
     <div class="w-full max-w-md bg-card rounded-3xl p-8 shadow-xl border border-bordercolor">
-        <div class="flex justify-center mb-6">
-            <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <i data-lucide="building" class="text-primary w-8 h-8"></i>
-            </div>
-        </div>
-        <h1 class="text-3xl font-extrabold text-center text-textdark mb-2 tracking-tight">TheManager</h1>
         <p class="text-center text-muted font-medium mb-8">Sign in to your account</p>
         
         <form method="post" action="{% url 'login' %}" class="space-y-5">

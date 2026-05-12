@@ -63,7 +63,6 @@
         <div class="h-full bg-primary animate-loading-bar rounded-r-full shadow-[0_0_10px_rgba(37,99,235,1)]"></div>
     </div>
 
-    {% if user.is_authenticated %}
     <!-- Mobile Header -->
     <div
         class="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-100 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 flex justify-between items-center z-50">
@@ -72,12 +71,16 @@
                 <i data-lucide="arrow-left" class="w-6 h-6"></i>
             </button>
             <img src="{% static 'core/pwa/logo.png' %}" class="w-8 h-8 rounded-lg object-cover" alt="Logo">
-            <span class="font-bold text-lg tracking-tight">TheManager</span>
+            <span class="font-bold text-lg tracking-tight">{% block header_title %}TheManager{% endblock %}</span>
         </div>
+        {% if user.is_authenticated %}
         <button id="mobile-menu-open" class="p-2 text-muted">
             <i data-lucide="menu" class="w-6 h-6"></i>
         </button>
+        {% endif %}
     </div>
+
+    {% if user.is_authenticated %}
 
     <!-- Sidebar Wrapper -->
     <aside id="sidebar"
@@ -286,7 +289,7 @@
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col min-w-0 bg-gray-50/50">
         <main
-            class="flex-1 overflow-y-auto {% if user.is_authenticated %}pt-[calc(5rem+env(safe-area-inset-top))] lg:pt-0{% endif %} p-4 lg:p-8 custom-scrollbar">
+            class="flex-1 overflow-y-auto pt-[calc(5rem+env(safe-area-inset-top))] lg:pt-0 p-4 lg:p-8 custom-scrollbar">
             {% block content %}
             {% endblock %}
         </main>
